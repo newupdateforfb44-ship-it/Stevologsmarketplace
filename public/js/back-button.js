@@ -1,7 +1,7 @@
 /* Adds a slim "Back" bar at the top of every inner page. */
 (function () {
   if (window.__kslBackBar) return; window.__kslBackBar = true;
-  var path = location.pathname.replace(/\/+$/, '') || '/';
+  var path = location.pathname.replace(/\/+$/, '').replace(/\.html$/i, '') || '/';
   var skip = ['/', '/dashboard', '/login', '/register', '/welcome', '/terms'];
   if (skip.indexOf(path) !== -1 || /admin/i.test(path)) return;
   function mount() {
