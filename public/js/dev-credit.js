@@ -12,10 +12,10 @@
       '<div class="slm-devbar-inner">' +
         '<div class="slm-devbar-main">' +
           '<span class="slm-devbar-dot" aria-hidden="true"></span>' +
-          '<span class="slm-devbar-txt">Designed and engineered by developer <strong>Marvel</strong></span>' +
+          '<span class="slm-devbar-txt">Edited by <strong>Stevo</strong></span>' +
         '</div>' +
         '<div class="slm-devbar-buy">' +
-          'Want to buy this website? <a href="' + OWNER_WHATSAPP + '" target="_blank" rel="noopener noreferrer" class="slm-devbar-cta">Contact the admin / owner on WhatsApp: +234 812 835 8120</a>' +
+          'You need something like this? DM <a href="https://t.me/stevotechdigital1" target="_blank" rel="noopener" style="color:inherit"><strong>@stevotechdigital1</strong></a> on Telegram' +
         '</div>' +
       '</div>';
     document.body.appendChild(bar);
