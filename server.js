@@ -8546,6 +8546,7 @@ app.get('/number-history', (req, res) => (res.set('Cache-Control', 'no-store, mu
 app.get('/order-status', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'order-status.html'))));
 app.get('/marketplace2', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'marketplace2.html'))));
 app.get('/marketplace3', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'marketplace3.html'))));
+app.get('/gift-delivery', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'gift-delivery.html'))));
 app.get('/marketplace4', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'marketplace4.html'))));
 app.get('/marketplace', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'marketplace.html'))));
 app.get('/tools', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'tools.html'))));
