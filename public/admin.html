@@ -2065,7 +2065,7 @@ tr:hover td{background:rgba(255,255,255,.035)}
           <div style="font-size:.82rem;color:var(--t2);margin-bottom:12px">These power the floating Telegram + WhatsApp buttons shown on every page and every “Contact admin” link. Change them any time — no redeploy needed.</div>
           <div class="form-row" style="margin-bottom:10px">
             <div class="fg"><label>Telegram username</label><input type="text" id="slTelegramUser" placeholder="your Telegram username" oninput="slmSyncTelegramLink()"/></div>
-            <div class="fg"><label>Telegram link (auto-filled — edit only for a custom link)</label><input type="url" id="slTelegramLink" placeholder="#" oninput="slmTelegramLinkDirty=true"/></div>
+            <div class="fg"><label>Telegram personal chat link (customers contact you here — auto-filled from username)</label><input type="url" id="slTelegramLink" placeholder="#" oninput="slmTelegramLinkDirty=true"/></div>
           </div>
           <div class="form-row" style="margin-bottom:10px">
             <div class="fg"><label>Telegram Join Channel link</label><input type="url" id="slTelegramChannelLink" placeholder="https://t.me/your_channel"/></div>
@@ -2074,6 +2074,10 @@ tr:hover td{background:rgba(255,255,255,.035)}
           <div class="form-row" style="margin-bottom:10px">
             <div class="fg"><label>WhatsApp chat link (leave blank to use the number above)</label><input type="url" id="slWaChatLink" placeholder="#"/></div>
             <div class="fg"><label>Support hours (shown to buyers)</label><input type="text" id="slSupportHours" placeholder="9:00 AM – 11:00 PM (WAT), every day"/></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin:4px 0 14px;padding:12px;border:1px solid var(--border);border-radius:10px">
+            <input type="checkbox" id="slWaEnabled" checked style="width:20px;height:20px;flex:none"/>
+            <label for="slWaEnabled" style="margin:0;cursor:pointer"><b>WhatsApp contact mode ON</b><br><span style="font-size:.8rem;color:var(--t2)">Untick and save to switch WhatsApp off everywhere. Customers will then see Telegram contact only (set your Telegram username/link first).</span></label>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <button class="btn-primary" onclick="saveContactLinks()" style="min-width:160px"><svg class="icon i-save" aria-hidden="true"><use href="#i-save"/></svg> Save Contact Links</button>
@@ -2084,6 +2088,16 @@ tr:hover td{background:rgba(255,255,255,.035)}
         <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
           <div id="slFeedback" class="fb" style="margin-bottom:8px"></div>
  <button class="btn-gold" onclick="saveSiteLinks()" style="width:100%;font-size:1rem"><svg class="icon i-save" aria-hidden="true"><use href="#i-save"/></svg> Save All Three at Once</button>
+        </div>
+      </div>
+    </div>
+    <div id="tab-giftdelivery" class="tab-panel">
+      <div class="sec">
+        <div class="sec-title"><svg class="icon i-gift" aria-hidden="true"><use href="#i-gift"/></svg> Gift Delivery</div>
+        <div style="text-align:center;padding:36px 16px">
+          <div style="font-size:48px;line-height:1">&#127873;</div>
+          <div style="font-weight:800;font-size:1.2rem;margin:12px 0 6px">Coming soon</div>
+          <div style="font-size:.9rem;color:var(--t2)">Gift Delivery is not live yet. Customers see the same &ldquo;Coming soon&rdquo; message until it is ready.</div>
         </div>
       </div>
     </div>
@@ -2601,6 +2615,7 @@ const ADMIN_NAV = [
     { tab:'notifbar',   icon:'i-bell',           label:'Notifications bar (post, edit, delete)', owner:true,
       keywords:'notification notifications notify notice announcement announcements broadcast popup alert message post edit delete bar' },
     { tab:'sitelinks',  icon:'i-link',           label:'Contact info & links', accent:'accent-green' },
+    { tab:'giftdelivery', icon:'i-gift',         label:'Gift Delivery', keywords:'gift delivery coming soon' },
     { tab:'support',    icon:'i-message-circle',  label:'Support tickets' },
     { tab:'fraud',      icon:'i-shield',         label:'Fraud & security', owner:true },
     { tab:'staffadmin', icon:'i-headphones',     label:'Sub-admins',       owner:true },
@@ -5780,6 +5795,7 @@ async function loadContactLinksAdmin() {
     slmTelegramLinkDirty = false; // freshly loaded from the server — back in sync
     set('slWaChatLink', links.whatsappChatLink || '');
     set('slSupportHours', links.supportHours || '');
+    const waOn = document.getElementById('slWaEnabled'); if (waOn) waOn.checked = links.whatsappEnabled !== false;
     const prev = document.getElementById('slTgPreviewBtn');
     if (prev) prev.href = links.telegramLink || ('https://t.me/' + (links.telegramUsername || ''));
   } catch (e) {}
@@ -5796,7 +5812,8 @@ async function saveContactLinks() {
   if (!telegramUsername && !telegramLink) return setFb(fb, 'Enter a Telegram username or link', 'err');
   if (telegramUsername && !telegramLink) telegramLink = 'https://t.me/' + telegramUsername;
   try {
-    await aFetch('/api/admin/site-links', 'POST', { telegramUsername, telegramLink, telegramChannelLink, telegramCommunityLink, whatsappChatLink, supportHours });
+    const whatsappEnabled = !!(document.getElementById('slWaEnabled') || { checked: true }).checked;
+    await aFetch('/api/admin/site-links', 'POST', { telegramUsername, telegramLink, telegramChannelLink, telegramCommunityLink, whatsappChatLink, whatsappEnabled, supportHours });
     slmTelegramLinkDirty = false;
     setFb(fb, 'Saved — live across the site immediately', 'ok');
     const prev = document.getElementById('slTgPreviewBtn'); if (prev) prev.href = telegramLink;

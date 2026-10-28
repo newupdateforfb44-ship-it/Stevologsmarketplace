@@ -712,44 +712,38 @@
   <script src="/js/page-transitions.js?v=1" defer></script>
 
 <!-- SLM-MARKETS -->
+<style>
+.slm-box-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 14px}
+.slm-box{display:flex;align-items:center;gap:10px;min-height:64px;padding:12px;border:1px solid var(--border,#252535);border-radius:12px;text-decoration:none;color:inherit;background:rgba(127,127,127,.06)}
+.slm-box:active{transform:scale(.98)}
+.slm-box-ico{font-size:24px;line-height:1;flex:none}
+.slm-box b{display:block;font-size:13.5px;line-height:1.25}
+.slm-box small{display:block;font-size:11.5px;opacity:.65;margin-top:2px}
+</style>
 <script>
 (function(){
-  var MK=[
-    {n:'Marketplace 1',u:'/api/logs?type=log',p:'/marketplace'},
-    {n:'Marketplace 2',u:'/api/market2/products',p:'/marketplace2'},
-    {n:'Marketplace 3',u:'/api/market3/products',p:'/marketplace3'}
+  var GROUPS=[
+    {t:'Marketplaces',ico:'&#128717;',sub:'Browse & buy',items:[
+      {n:'Marketplace 1',p:'/marketplace'},
+      {n:'Marketplace 2',p:'/marketplace2'},
+      {n:'Marketplace 3',p:'/marketplace3'},
+      {n:'Marketplace 4',p:'/marketplace4'}
+    ]},
+    {t:'Buy Numbers',ico:'&#128241;',sub:'Get a number',items:[
+      {n:'Buy Number 1',p:'/buy-number-1'},
+      {n:'Buy Number 2',p:'/buy-number-2'}
+    ]}
   ];
-  var t=null;try{t=localStorage.getItem('ksl_token');}catch(e){}
-  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function toArr(x){
-    if(Array.isArray(x))return x;
-    if(x&&typeof x==='object'){var k=['items','products','logs','data','results'];for(var i=0;i<k.length;i++){if(Array.isArray(x[k[i]]))return x[k[i]];}}
-    return [];
-  }
-  function good(i){return i&&i.soldOut!==true&&i.available!==false&&i.isActive!==false;}
-  function pic(i){
-    var p=i.picture||i.image||i.img||i.thumbnail||(Array.isArray(i.images)?i.images[0]:'')||'';
-    return (typeof p==='string'&&(p.indexOf('http')===0||p.charAt(0)==='/'))?p:'';
-  }
-  function card(i,page){
-    var p=(i.priceFrom!=null?i.priceFrom:i.price),im=pic(i),title=i.title||i.name||'Item';
-    return '<a class="slm-mk-item" href="'+page+'">'+(im?'<img loading="lazy" alt="" src="'+esc(im)+'">':'<div class="slm-mk-ph">&#128717;</div>')+'<b>'+esc(title)+'</b><span>'+(p!=null&&!isNaN(Number(p))?'&#8358;'+Number(p).toLocaleString('en-NG'):'View')+'</span></a>';
-  }
   var a=document.querySelector('.dsh-svc-item');
   var host=a?(a.parentElement.closest('.dsh-card')||a.parentElement):null;
   var last=host;
-  MK.forEach(function(m){
+  GROUPS.forEach(function(g){
     var sec=document.createElement('section');
     sec.className='dsh-card';
-    sec.innerHTML='<div class="dsh-card-head"><span class="dsh-card-title">'+m.n+'</span><a class="slm-seeall" href="'+m.p+'">See all &rsaquo;</a></div><div class="slm-mk-list"><div class="slm-mk-empty">Loading&hellip;</div></div>';
+    sec.innerHTML='<div class="dsh-card-head"><span class="dsh-card-title">'+g.t+'</span></div><div class="slm-box-grid">'+
+      g.items.map(function(i){return '<a class="slm-box" href="'+i.p+'"><span class="slm-box-ico">'+g.ico+'</span><span><b>'+i.n+'</b><small>'+g.sub+'</small></span></a>';}).join('')+
+      '</div>';
     if(last&&last.parentNode){last.parentNode.insertBefore(sec,last.nextSibling);last=sec;}else{document.body.appendChild(sec);}
-    var list=sec.querySelector('.slm-mk-list');
-    fetch(m.u,{headers:t?{Authorization:'Bearer '+t}:{}}).then(function(r){return r.ok?r.json():[];}).then(function(x){
-      var arr=toArr(x),items=arr.filter(good);
-      if(!items.length)items=arr;
-      items=items.slice(0,8);
-      list.innerHTML=items.length?items.map(function(i){return card(i,m.p);}).join(''):'<div class="slm-mk-empty">No items yet. Tap See all.</div>';
-    }).catch(function(){list.innerHTML='<div class="slm-mk-empty">Could not load items. Tap See all.</div>';});
   });
   // hide the contact card if it only holds contact links
   document.querySelectorAll('.dsh-contact-item').forEach(function(c){
@@ -770,14 +764,26 @@
     ['/tutorials','svc-orange','<span style="font-size:24px">&#128218;</span>','Tutorials',''],
     ['/purchases','svc-teal','<svg><use href="#i-clipboard"/></svg>','My Orders',''],
     ['/transactions','svc-sky','<svg><use href="#i-history"/></svg>','Transactions',''],
-    ['/referrals','svc-orange','<svg><use href="#i-gift"/></svg>','Referrals','']
+    ['/referrals','svc-orange','<svg><use href="#i-gift"/></svg>','Referrals',''],
+    ['#gift-delivery','svc-amber','<span style="font-size:24px">&#127873;</span>','Gift Delivery','SOON']
   ];
   var a=document.querySelector('.dsh-svc-item');
   if(a&&a.parentElement){
     a.parentElement.innerHTML=F.map(function(f){
-      return '<a class="dsh-svc-item" href="'+f[0]+'"><div class="dsh-svc-icon '+f[1]+'">'+f[2]+'</div><span class="dsh-svc-label">'+f[3]+'</span>'+(f[4]?'<span class="dsh-svc-badge">'+f[4]+'</span>':'')+'</a>';
+      return '<a class="dsh-svc-item" href="'+f[0]+'"'+(f[0]==='#gift-delivery'?' data-soon="1"':'')+'><div class="dsh-svc-icon '+f[1]+'">'+f[2]+'</div><span class="dsh-svc-label">'+f[3]+'</span>'+(f[4]?'<span class="dsh-svc-badge">'+f[4]+'</span>':'')+'</a>';
     }).join('');
   }
+
+  // Gift Delivery: not live yet, show "Coming soon"
+  document.addEventListener('click',function(ev){
+    var t=ev.target.closest&&ev.target.closest('a[data-soon]');
+    if(!t)return;
+    ev.preventDefault();
+    var old=document.getElementById('slmSoonToast');if(old)old.remove();
+    var d=document.createElement('div');d.id='slmSoonToast';d.textContent='Gift Delivery \u2014 Coming soon';
+    d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#111;color:#fff;padding:12px 20px;border-radius:999px;font:700 14px system-ui,sans-serif;z-index:99999;box-shadow:0 6px 20px rgba(0,0,0,.35)';
+    document.body.appendChild(d);setTimeout(function(){d.remove();},2200);
+  });
 
   // Floating support button goes straight to the support page
   document.addEventListener('click',function(ev){

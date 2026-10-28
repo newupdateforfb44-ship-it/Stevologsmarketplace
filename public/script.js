@@ -61,11 +61,26 @@ async function applySiteLinks() {
     WA_CHAT_LINK = links.whatsappChatLink || (WA_NUMBER ? `https://wa.me/${WA_NUMBER}` : '#');
     SUPPORT_HOURS = links.supportHours || SUPPORT_HOURS;
     document.querySelectorAll('a[data-link="telegram"]').forEach(a => { a.href = TG_LINK; });
+    // Admin switch: WhatsApp contact mode OFF -> Telegram only
+    WA_ENABLED = links.whatsappEnabled !== false;
+    if (!WA_ENABLED) {
+      const tgGroup = links.telegramCommunityLink || '', tgChannel = links.telegramChannelLink || '';
+      const hasSend = !!document.getElementById('i-send');
+      const swapIcon = a => { if (hasSend) a.querySelectorAll('use').forEach(u => u.setAttribute('href', '#i-send')); };
+      document.querySelectorAll('a[data-link="contact"], a[data-link="adminphone"]').forEach(a => { a.style.display = 'none'; });
+      document.querySelectorAll('a[data-link="group"]').forEach(a => { if (tgGroup) swapIcon(a); else a.style.display = 'none'; });
+      document.querySelectorAll('a[data-link="channel"]').forEach(a => { if (tgChannel) swapIcon(a); else a.style.display = 'none'; });
+      document.querySelectorAll('a[data-link="telegram"].sfab-item').forEach(a => a.classList.add('sfab-item-primary'));
+      document.querySelectorAll('.ksl-wa-only').forEach(el => { el.style.display = 'none'; });
+      const hero = document.getElementById('suppHeroSub'); if (hero) hero.textContent = "We're available 24/7 on Telegram";
+      const quick = document.getElementById('suppQuickSub'); if (quick) quick.textContent = 'Fastest response via Telegram';
+    }
     document.querySelectorAll('.ksl-telegram-text').forEach(el => el.textContent = `@${TG_USERNAME}`);
     document.querySelectorAll('.ksl-support-hours').forEach(el => el.textContent = SUPPORT_HOURS);
   } catch (e) { /* No contact link is assumed until the admin configures Site Links. */ }
 }
 let TG_LINK = '#';
+let WA_ENABLED = true;
 let TG_USERNAME = '';
 let WA_CHAT_LINK = '';
 let SUPPORT_HOURS = '9:00 AM \u2013 11:00 PM (WAT), every day';
