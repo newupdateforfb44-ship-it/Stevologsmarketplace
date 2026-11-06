@@ -2132,6 +2132,7 @@ async function buyItem(id) {
       <h3>Purchase Successful!</h3>
       <p>New balance: <strong style="color:var(--gold)">${P2(data.newBalance)}</strong></p>
       ${detailBlock}
+      ${purchaseTutorialBtn(data.purchaseTutorial)}
       ${receiptRow}
       <button class="btn-primary btn-full" onclick="closeModal();showPage('purchases')" style="margin-top:12px"><svg class="icon i-package" aria-hidden="true"><use href="#i-package"/></svg> View All Purchases</button>
       <a href="https://wa.me/${WA_NUMBER}" target="_blank" class="wa-support-link"><svg class="icon i-message-circle" aria-hidden="true"><use href="#i-message-circle"/></svg> Need help? WhatsApp us</a>
@@ -2214,6 +2215,7 @@ function buildPurchaseCard(p,idx) {
     </div>
     <div class="purchase-id-row"><span class="pid-tag"><svg class="icon i-receipt" aria-hidden="true"><use href="#i-receipt"/></svg> ID: ${esc(purchaseId)}</span></div>
     ${detailContent}
+    ${purchaseTutorialBtn(p.purchaseTutorial)}
     <div class="pc-actions">
       ${copyHistoryBtn}
       <a href="https://wa.me/${WA_NUMBER}" target="_blank" class="pc-wa-btn"><svg class="icon i-message-circle" aria-hidden="true"><use href="#i-message-circle"/></svg> Support</a>
@@ -2820,12 +2822,32 @@ function buildTutorialButtonHtml(tutorial, compact) {
     ? `<button class="tutorial-btn tutorial-btn-compact" onclick="openTutorialViewer(${regId})" title="View login tutorial"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Tutorial</button>`
     : `<button class="tutorial-btn" onclick="openTutorialViewer(${regId})"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> View Login Tutorial</button>`;
 }
+// Button for a tutorial that came with a purchase (only ever present in the buyer's own purchase record).
+function purchaseTutorialBtn(t) {
+  if (!t || !t.tutorialType || t.tutorialType === 'none') return '';
+  const regId = _tutorialRegistryNextId++;
+  _tutorialRegistry[regId] = { ...t, purchase: true };
+  return `<button type="button" class="tutorial-btn" style="margin-top:10px;width:100%" onclick="openTutorialViewer(${regId})"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Watch Tutorial</button>`;
+}
 function openTutorialViewer(regId) {
   _tutorialData = _tutorialRegistry[regId];
   if (!_tutorialData) return;
   _tutorialImgIndex = 0;
-  const ov = document.getElementById('tutorialViewerOv');
-  if (!ov) { console.error('Tutorial viewer markup missing'); return; }
+  let ov = document.getElementById('tutorialViewerOv');
+  if (!ov) {
+    // Pages without the viewer markup (e.g. My Purchases) get it created on the fly.
+    ov = document.createElement('div');
+    ov.id = 'tutorialViewerOv';
+    ov.className = 'modal-overlay';
+    ov.setAttribute('onclick', 'if(event.target===this)closeTutorialViewer()');
+    ov.innerHTML = '<div class="modal-box" style="max-width:520px"><button class="modal-x" onclick="closeTutorialViewer()"><svg class="icon i-x" aria-hidden="true"><use href="#i-x"/></svg></button><div style="padding:20px"><h3 style="margin-bottom:14px"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Login Tutorial</h3><div id="tutorialViewerBody"></div></div></div>';
+    document.body.appendChild(ov);
+  }
+  const h = ov.querySelector('h3');
+  if (h) {
+    if (!h.dataset.orig) h.dataset.orig = h.innerHTML;
+    h.innerHTML = _tutorialData.purchase ? '<svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Tutorial' : h.dataset.orig;
+  }
   renderTutorialViewer();
   ov.classList.add('open');
 }
@@ -2860,6 +2882,7 @@ function renderTutorialViewer() {
   } else {
     body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t2)">Tutorial content unavailable.</div>`;
   }
+  if (t.note) body.insertAdjacentHTML('afterbegin', `<p style="margin:0 0 12px;color:var(--t2);font-size:13.5px;white-space:pre-wrap">${esc(t.note)}</p>`);
 }
 function tutorialImgStep(dir) {
   _tutorialImgIndex += dir;

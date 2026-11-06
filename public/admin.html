@@ -901,7 +901,20 @@ tr:hover td{background:rgba(255,255,255,.035)}
           <div class="fg"><label>Price (₦) *</label><input type="number" id="tPrice" placeholder="e.g. 1500" min="1"/></div>
           <div class="fg"><label>Available Quantity (0 = unlimited)</label><input type="number" id="tQty" placeholder="0" value="0" min="0"/></div>
         </div>
-        <div class="fg"><label>Picture (optional)</label><input type="file" id="tPic" accept="image/*"/></div>
+        <div class="fg"><label>Picture (optional)</label><input type="file" id="tPic" accept="image/*"/></div><div class="info-box purple"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Optional: a tutorial that <strong>only buyers can see</strong>. It is not shown on the product page — it appears after purchase and stays in their purchase history.</div>
+<div class="fg"><label>Tutorial after purchase (hidden from customers until they buy)</label>
+  <select id="tPTutType" onchange="togglePTutFields('t')">
+    <option value="none">None</option>
+    <option value="video">Video</option>
+    <option value="images">Multiple Pictures</option>
+    <option value="link">Link</option>
+  </select>
+</div>
+<div id="tPTutImagesWrap" class="fg" style="display:none"><label>Tutorial Pictures </label><input type="file" id="tPTutImages" accept="image/*" multiple/></div>
+<div id="tPTutVideoWrap" class="fg" style="display:none"><label>Tutorial Video </label><input type="file" id="tPTutVideo" accept="video/*"/></div>
+<div id="tPTutLinkWrap" class="fg" style="display:none"><label>Tutorial Link</label><input type="text" id="tPTutLink" placeholder="https://..."/></div>
+<div id="tPTutNoteWrap" class="fg" style="display:none"><label>Note for the buyer (optional)</label><textarea id="tPTutNote" rows="2" placeholder="e.g. Watch this first, then open the tool"></textarea></div>
+
  <button class="btn-gold" onclick="addTool()"><svg class="icon i-plus" aria-hidden="true"><use href="#i-plus"/></svg> Add Tool</button>
         <div id="addToolFb" class="fb"></div>
       </div>
@@ -2404,6 +2417,21 @@ tr:hover td{background:rgba(255,255,255,.035)}
       <div id="eTutorialVideoWrap" class="fg" style="display:none"><label>Replace Tutorial Video <span id="eCurrentTutorialVideoNote" style="color:var(--t2);font-weight:400"></span></label><input type="file" id="eTutorialVideo" accept="video/*"/></div>
       <div id="eTutorialLinkWrap" class="fg" style="display:none"><label>Tutorial Link</label><input type="text" id="eTutorialLinkUrl" placeholder="https://..."/></div>
  <button type="button" id="eDeleteTutorialBtn" class="btn-del" style="display:none" onclick="deleteTutorialNow()"><svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Delete Tutorial Now</button>
+<div id="ePTutWrap" style="display:none">
+<div class="info-box purple"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Tutorial for buyers only: hidden on the product page and shown after purchase (kept in their purchase history). Set to None to remove it.</div>
+<div class="fg"><label>Tutorial after purchase (hidden from customers until they buy)</label>
+  <select id="ePTutType" onchange="togglePTutFields('e')">
+    <option value="none">None</option>
+    <option value="video">Video</option>
+    <option value="images">Multiple Pictures</option>
+    <option value="link">Link</option>
+  </select>
+</div>
+<div id="ePTutImagesWrap" class="fg" style="display:none"><label>Tutorial Pictures <span id="eCurrentPTutImages" style="color:var(--t2);font-weight:400"></span></label><input type="file" id="ePTutImages" accept="image/*" multiple/></div>
+<div id="ePTutVideoWrap" class="fg" style="display:none"><label>Tutorial Video <span id="eCurrentPTutVideo" style="color:var(--t2);font-weight:400"></span></label><input type="file" id="ePTutVideo" accept="video/*"/></div>
+<div id="ePTutLinkWrap" class="fg" style="display:none"><label>Tutorial Link</label><input type="text" id="ePTutLink" placeholder="https://..."/></div>
+<div id="ePTutNoteWrap" class="fg" style="display:none"><label>Note for the buyer (optional)</label><textarea id="ePTutNote" rows="2" placeholder="e.g. Watch this first, then open the tool"></textarea></div>
+</div>
     </div>
     <div id="eFolderWrap" style="display:none">
  <div class="info-box purple">Sold sub-accounts are locked and can't be edited — only unsold ones can be changed, and you can add new ones. <svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Sold sub-accounts auto-clean from this editor 24 hours after sale (they're kept in the buyer's purchase history and your records, not deleted).</div>
@@ -3958,6 +3986,35 @@ function toggleTutorialFields(prefix) {
   if (videoWrap) videoWrap.style.display = type === 'video' ? 'block' : 'none';
   if (linkWrap) linkWrap.style.display = type === 'link' ? 'block' : 'none';
 }
+function togglePTutFields(prefix) {
+  const type = document.getElementById(prefix+'PTutType').value;
+  const show = (id, on) => { const el = document.getElementById(prefix+id); if (el) el.style.display = on ? 'block' : 'none'; };
+  show('PTutImagesWrap', type === 'images');
+  show('PTutVideoWrap', type === 'video');
+  show('PTutLinkWrap', type === 'link');
+  show('PTutNoteWrap', type !== 'none');
+}
+// Adds the after-purchase tutorial fields to a FormData. Returns an error message, or '' when fine.
+function appendPTut(fd, prefix, requireFiles) {
+  const type = document.getElementById(prefix+'PTutType').value;
+  fd.append('pTutType', type);
+  if (type === 'none') return '';
+  fd.append('pTutNote', document.getElementById(prefix+'PTutNote').value || '');
+  if (type === 'images') {
+    const files = document.getElementById(prefix+'PTutImages').files;
+    if (!files.length && requireFiles) return 'Please choose the tutorial pictures, or set the tutorial to None';
+    Array.from(files).forEach(f => fd.append('purchaseTutorialImages', f));
+  } else if (type === 'video') {
+    const vf = document.getElementById(prefix+'PTutVideo').files[0];
+    if (!vf && requireFiles) return 'Please choose the tutorial video, or set the tutorial to None';
+    if (vf) fd.append('purchaseTutorialVideo', vf);
+  } else if (type === 'link') {
+    const link = (document.getElementById(prefix+'PTutLink').value || '').trim();
+    if (!/^https?:\/\//i.test(link)) return 'Enter the tutorial link starting with http:// or https://';
+    fd.append('pTutLink', link);
+  }
+  return '';
+}
 // One-click tutorial removal from the Edit modal — clears just the tutorial, immediately,
 // without needing to change the dropdown to "None" and save the whole form.
 async function deleteTutorialNow() {
@@ -4037,6 +4094,8 @@ async function addTool() {
   fd.append('price',price);fd.append('category',cat);fd.append('deliveryType',deliveryType);
   if(pic) fd.append('picture',pic);
   if(deliverableFile) fd.append('deliverableFile',deliverableFile);
+  const ptutErr = appendPTut(fd, 't', true);
+  if (ptutErr) return setFb(fb, ptutErr, 'err');
   const pbar1609 = progressBarFor(fb);
   setFb(fb,'Uploading... 0%','');
   pbar1609.show();
@@ -4049,6 +4108,10 @@ async function addTool() {
     document.getElementById('tPic').value='';
     document.getElementById('tDeliverableFile').value='';
     document.getElementById('tDeliveryType').value='link';
+    document.getElementById('tPTutType').value='none';
+    ['tPTutImages','tPTutVideo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    ['tPTutLink','tPTutNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    togglePTutFields('t');
     toggleToolDeliveryFields();
     loadTools();
  } catch(e){pbar1609.hide();setFb(fb,' '+e.message,'err');}
@@ -4097,6 +4160,16 @@ function openEdit(item) {
   document.getElementById('eCurrentTutorialVideoNote').textContent = tut.tutorialType === 'video' && tut.videoUrl ? '(current video uploaded — choose a new one only to replace it)' : '';
   document.getElementById('eDeleteTutorialBtn').style.display = (tut.tutorialType && tut.tutorialType !== 'none') ? 'inline-flex' : 'none';
   toggleTutorialFields('e');
+  const ptut = item.purchaseTutorial || { tutorialType: 'none' };
+  document.getElementById('ePTutWrap').style.display = isTool ? 'block' : 'none';
+  document.getElementById('ePTutType').value = ptut.tutorialType || 'none';
+  document.getElementById('ePTutLink').value = ptut.tutorialType === 'link' ? (ptut.linkUrl || '') : '';
+  document.getElementById('ePTutNote').value = ptut.note || '';
+  document.getElementById('ePTutImages').value = '';
+  document.getElementById('ePTutVideo').value = '';
+  document.getElementById('eCurrentPTutImages').textContent = ptut.tutorialType === 'images' && (ptut.images || []).length ? `(${ptut.images.length} current — choose new ones only to replace them)` : '';
+  document.getElementById('eCurrentPTutVideo').textContent = ptut.tutorialType === 'video' && ptut.videoUrl ? '(current video uploaded — choose a new one only to replace it)' : '';
+  togglePTutFields('e');
   document.getElementById('eSimpleWrap').style.display = isFolder ? 'none' : 'block';
   document.getElementById('eFolderWrap').style.display = isFolder ? 'block' : 'none';
   if (isFolder) renderEditSubAccounts(item.subAccounts || []);
@@ -4373,6 +4446,10 @@ async function saveEdit() {
     } else if (tutorialType === 'link') {
       fd.append('tutorialLinkUrl', document.getElementById('eTutorialLinkUrl').value);
     }
+  }
+  if (document.getElementById('eType').value === 'tool') {
+    const ptutErr = appendPTut(fd, 'e', false);
+    if (ptutErr) return setFb(fb, ptutErr, 'err');
   }
   const pbarEdit = progressBarFor(fb);
   setFb(fb,'Uploading... 0%','');
