@@ -92,7 +92,7 @@ $('backLink').addEventListener('click',e=>{const r=route();if(r.t){e.preventDefa
 $('search').addEventListener('input',render);
 window.addEventListener('hashchange',()=>{$('search').value='';window.scrollTo(0,0);renderWithLoader()});
 async function load(){
-  try{await (window.StevoUI&&StevoUI.logos());const d=await api('/api/boost2/services');all=(d.services||[]).map(s=>({...s,price:Number(s.price)||0}));window.__b2rows=all;loaded=true;render();if(d.enabled===false){$('view').style.display='';$('view').className='panel muted';$('view').textContent=d.message||'Not available yet.'}}
+  try{const logosP=Promise.resolve(window.StevoUI&&StevoUI.logos()).catch(()=>{});const d=await api('/api/boost2/services');await logosP;all=(d.services||[]).map(s=>({...s,price:Number(s.price)||0}));window.__b2rows=all;loaded=true;render();if(d.enabled===false){$('view').style.display='';$('view').className='panel muted';$('view').textContent=d.message||'Not available yet.'}}
   catch(e){loaded=true;$('view').style.display='';$('view').className='panel muted';$('view').textContent=e.message||'Could not load services.';try{StevoUI.banner(e.message||'Could not load services.','err')}catch(_){}}
   finally{requestAnimationFrame(()=>requestAnimationFrame(()=>{try{SlmBoostLoader.hide()}catch(e){}}))}
 }
