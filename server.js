@@ -9105,6 +9105,9 @@ try {
 try {
   require('./lib/market4').register(app, { mongoose, User, Transaction, auth, anyAdminAuth, sendAdminEmail });
 } catch (m4Err) { console.error('[market4] failed to load:', m4Err.message); }
+try {
+  require('./lib/sales-summary').register(app, { mongoose, adminAuth });
+} catch (ssErr) { console.error('[sales-summary] failed to load:', ssErr.message); }
 app.get('/boost2/order', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'boost2-order.html'))));
 app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `Unknown API endpoint: ${req.method} ${req.path}` });
