@@ -424,6 +424,56 @@ tr:hover td{background:rgba(255,255,255,.035)}
         <div id="opsAlerts"><div class="spin"></div></div>
       </div>
     </div>
+    <div id="tab-salessummary" class="tab-panel">
+      <div class="sec" style="border-left:3px solid var(--green)">
+        <div class="sec-title"><svg class="icon i-banknote" aria-hidden="true"><use href="#i-banknote"/></svg> Sales &amp; profit summary</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
+          <button type="button" class="btn-sm ss-range" data-range="today" onclick="ssSetRange('today')">Today</button>
+          <button type="button" class="btn-sm ss-range" data-range="7d" onclick="ssSetRange('7d')">7 days</button>
+          <button type="button" class="btn-sm ss-range" data-range="30d" onclick="ssSetRange('30d')">30 days</button>
+          <button type="button" class="btn-sm ss-range" data-range="90d" onclick="ssSetRange('90d')">90 days</button>
+          <button type="button" class="btn-sm ss-range" data-range="all" onclick="ssSetRange('all')">All time</button>
+          <input id="ssFrom" class="inp" type="date" style="flex:0 0 auto;width:150px"/>
+          <input id="ssTo" class="inp" type="date" style="flex:0 0 auto;width:150px"/>
+          <button type="button" class="btn-sm" onclick="ssApplyCustom()">Apply dates</button>
+          <button type="button" class="btn-sm" onclick="ssLoad()">&#8635; Refresh</button>
+          <button type="button" class="btn-sm" onclick="ssExportCsv()">Export CSV</button>
+        </div>
+        <div id="ssRangeLabel" class="muted" style="font-size:12px"></div>
+      </div>
+
+      <div id="ssErrors" class="info-box red" style="display:none"></div>
+
+      <div class="stat-row" id="ssKpis">
+        <div class="stat-card"><div class="sc-val" id="ssRevenue">&mdash;</div><div class="sc-lbl">Total sold (revenue)</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssOrders">&mdash;</div><div class="sc-lbl">Orders completed</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssCost" style="color:var(--blue)">&mdash;</div><div class="sc-lbl">Total provider cost</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssProfit" style="color:var(--green)">&mdash;</div><div class="sc-lbl">Profit</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssMargin">&mdash;</div><div class="sc-lbl">Profit margin</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssAvg">&mdash;</div><div class="sc-lbl">Average order</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssLoss" style="color:var(--red)">&mdash;</div><div class="sc-lbl" id="ssLossLbl">Loss (sold below cost)</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssRefund" style="color:var(--purple)">&mdash;</div><div class="sc-lbl" id="ssRefundLbl">Refunded to customers</div></div>
+        <div class="stat-card"><div class="sc-val" id="ssPending">&mdash;</div><div class="sc-lbl" id="ssPendingLbl">Pending / needs review</div></div>
+      </div>
+
+      <div class="info-box" id="ssNote" style="display:none"></div>
+
+      <div class="sec">
+        <div class="sec-title">By product line</div>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Orders</th><th>Sold (&#8358;)</th><th>Provider cost (&#8358;)</th><th>Profit (&#8358;)</th><th>Margin</th><th>Loss (&#8358;)</th><th>Refunded</th><th>Pending</th></tr></thead><tbody id="ssSources"><tr><td colspan="9">Loading&hellip;</td></tr></tbody></table></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Top sellers</div>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Source</th><th>Orders</th><th>Sold (&#8358;)</th><th>Profit (&#8358;)</th></tr></thead><tbody id="ssTop"><tr><td colspan="5">Loading&hellip;</td></tr></tbody></table></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Day by day</div>
+        <div class="table-wrap" style="max-height:420px;overflow:auto"><table class="tbl"><thead><tr><th>Date</th><th>Orders</th><th>Sold (&#8358;)</th><th>Provider cost (&#8358;)</th><th>Profit (&#8358;)</th><th style="min-width:160px"></th></tr></thead><tbody id="ssDaily"><tr><td colspan="6">Loading&hellip;</td></tr></tbody></table></div>
+      </div>
+    </div>
+
     <div id="tab-dashboard" class="tab-panel active">
       <div class="sec owner-only" style="border-color:var(--gold)">
         <div class="sec-title">Marketplace &amp; Server 2 settings</div>
@@ -2593,6 +2643,8 @@ function doLogout(){ sessionStorage.removeItem(SK); sessionStorage.removeItem(SK
 const ADMIN_NAV = [
   { group:'Overview', items:[
     { tab:'dashboard', icon:'i-bar-chart',    label:'Dashboard' },
+    { tab:'salessummary', icon:'i-banknote', label:'Sales & profit summary', owner:true,
+      keywords:'sales profit loss revenue provider cost summary report sold earnings margin' },
     { tab:'ops',       icon:'i-activity',     label:'Operations (numbers, boost, chat)',
       keywords:'operations overview stock numbers boost balance live chat pending waiting' },
 
@@ -2731,6 +2783,7 @@ function switchTab(name,el) {
   // Sync both menus (desktop sidebar + mobile drawer) and the mobile section header
   markAdminNavActive(name);
   if(name==='dashboard')    loadDashboard();
+  if(name==='salessummary') { try{ ssLoad(); }catch(err){ console.error('sales summary failed',err); } }
   if(name==='emaildelivery'){ edLoad(); edLoadAlerts(); edLoadLogs(); }
   if(name==='campaigns')    cmpLoad();
   if(name==='logs')         { loadLogs(); loadCategories(); loadCategoriesIntoSelects(); loadRestockDemand(); }
@@ -7282,6 +7335,100 @@ async function refundOtpSuiteOrder(){const id=prompt('Paste the OTP Suite order 
   }, true);
   closeNow(); /* start with the menu closed */
 })();
+</script>
+<script>
+// ── SALES & PROFIT SUMMARY ───────────────────────────────────────────────────
+var ssState = { range:'30d', from:'', to:'', data:null };
+function ssN(n){ return Number(n||0).toLocaleString('en-NG',{maximumFractionDigits:0}); }
+function ssM(n){ return '\u20A6'+Number(n||0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function ssSetRange(r){ ssState.range=r; ssLoad(); }
+function ssApplyCustom(){
+  var f=document.getElementById('ssFrom').value, t=document.getElementById('ssTo').value;
+  if(!f||!t){ alert('Pick both a start and an end date.'); return; }
+  ssState.range='custom'; ssState.from=f; ssState.to=t; ssLoad();
+}
+async function ssLoad(){
+  document.querySelectorAll('.ss-range').forEach(function(b){
+    var on = b.getAttribute('data-range')===ssState.range;
+    b.style.borderColor = on ? 'var(--gold)' : ''; b.style.color = on ? 'var(--gold)' : '';
+  });
+  var lbl=document.getElementById('ssRangeLabel'); if(lbl) lbl.textContent='Loading\u2026';
+  var q='range='+encodeURIComponent(ssState.range);
+  if(ssState.range==='custom') q+='&from='+encodeURIComponent(ssState.from)+'&to='+encodeURIComponent(ssState.to);
+  try{
+    var d=await aFetch('/api/admin/sales-summary?'+q);
+    ssState.data=d; ssRender(d);
+  }catch(e){
+    if(lbl) lbl.textContent='';
+    var box=document.getElementById('ssErrors'); box.style.display='block'; box.textContent='Could not load the summary: '+e.message;
+  }
+}
+function ssRender(d){
+  var t=d.totals||{}, el=function(id){return document.getElementById(id);};
+  el('ssRangeLabel').textContent = (d.range&&d.range.label||'')+' \u00B7 Nigerian time \u00B7 updated '+new Date(d.generatedAt).toLocaleTimeString();
+  var eb=el('ssErrors');
+  if(d.errors&&d.errors.length){ eb.style.display='block'; eb.innerHTML='Some sources could not be read, so totals may be incomplete:<br>'+d.errors.map(esc).join('<br>'); }
+  else eb.style.display='none';
+  el('ssRevenue').textContent=ssM(t.revenue);
+  el('ssOrders').textContent=ssN(t.orders);
+  el('ssCost').textContent=ssM(t.providerCost);
+  var pe=el('ssProfit'); pe.textContent=ssM(t.profit); pe.style.color=t.profit<0?'var(--red)':'var(--green)';
+  el('ssMargin').textContent=(t.marginPct||0).toFixed(1)+'%';
+  el('ssAvg').textContent=ssM(t.avgOrderValue);
+  el('ssLoss').textContent=ssM(t.lossAmount);
+  el('ssLossLbl').textContent='Loss (sold below cost) \u00B7 '+ssN(t.lossOrders)+' order'+(t.lossOrders===1?'':'s');
+  el('ssRefund').textContent=ssM(t.refundedAmount);
+  el('ssRefundLbl').textContent='Refunded to customers \u00B7 '+ssN(t.refundedCount);
+  el('ssPending').textContent=ssM(t.pendingAmount);
+  el('ssPendingLbl').textContent='Pending / review \u00B7 '+ssN(t.pendingCount);
+
+  var note=el('ssNote'), own=t.ownStock||{}, pv=t.provider||{};
+  if(own.revenue>0){
+    note.style.display='block';
+    note.innerHTML='<b>Own-stock logs &amp; tools</b> ('+ssM(own.revenue)+' from '+ssN(own.orders)+' orders) have no cost price stored, so they count as 100% profit in the totals above. '
+      +'<b>Provider-backed products only:</b> sold '+ssM(pv.revenue)+', cost '+ssM(pv.cost)+', profit <b>'+ssM(pv.profit)+'</b> ('+(pv.marginPct||0).toFixed(1)+'% margin).';
+  } else note.style.display='none';
+
+  var rows=(d.sources||[]).map(function(s){
+    return '<tr><td>'+esc(s.label)+(s.costTracked?'':' <span class="muted" title="No cost price stored">*</span>')+'</td>'
+      +'<td>'+ssN(s.orders)+'</td><td>'+ssM(s.revenue)+'</td><td>'+(s.costTracked?ssM(s.cost):'\u2014')+'</td>'
+      +'<td style="color:'+(s.profit<0?'var(--red)':'var(--green)')+'">'+ssM(s.profit)+'</td>'
+      +'<td>'+(s.costTracked?(s.marginPct||0).toFixed(1)+'%':'\u2014')+'</td>'
+      +'<td style="color:'+(s.lossAmount>0?'var(--red)':'inherit')+'">'+ssM(s.lossAmount)+'</td>'
+      +'<td>'+ssN(s.refundedCount)+' ('+ssM(s.refundedAmount)+')</td>'
+      +'<td>'+ssN(s.pendingCount)+' ('+ssM(s.pendingAmount)+')</td></tr>';
+  });
+  el('ssSources').innerHTML=rows.length?rows.join(''):'<tr><td colspan="9">No sales in this period.</td></tr>';
+
+  var top=(d.top||[]).map(function(x){
+    return '<tr><td class="wrap">'+esc(x.item)+'</td><td>'+esc(x.source)+'</td><td>'+ssN(x.orders)+'</td><td>'+ssM(x.revenue)+'</td>'
+      +'<td style="color:'+(x.profit<0?'var(--red)':'var(--green)')+'">'+ssM(x.profit)+'</td></tr>';
+  });
+  el('ssTop').innerHTML=top.length?top.join(''):'<tr><td colspan="5">No sales in this period.</td></tr>';
+
+  var daily=(d.daily||[]).slice().reverse(), max=0;
+  daily.forEach(function(x){ if(x.revenue>max) max=x.revenue; });
+  var drows=daily.map(function(x){
+    var w=max>0?Math.max(2,Math.round(x.revenue/max*100)):0, pw=x.revenue>0?Math.max(0,Math.min(100,Math.round(x.profit/x.revenue*100))):0;
+    return '<tr><td>'+esc(x.date)+'</td><td>'+ssN(x.orders)+'</td><td>'+ssM(x.revenue)+'</td><td>'+ssM(x.cost)+'</td>'
+      +'<td style="color:'+(x.profit<0?'var(--red)':'var(--green)')+'">'+ssM(x.profit)+'</td>'
+      +'<td><div style="height:8px;border-radius:4px;background:var(--bg4);width:100%"><div style="height:8px;border-radius:4px;background:var(--blue);width:'+w+'%;position:relative"><div style="height:8px;border-radius:4px;background:var(--green);width:'+pw+'%"></div></div></div></td></tr>';
+  });
+  el('ssDaily').innerHTML=drows.length?drows.join(''):'<tr><td colspan="6">No sales in this period.</td></tr>';
+}
+function ssExportCsv(){
+  var d=ssState.data; if(!d){ alert('Load the summary first.'); return; }
+  var q=function(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  var L=[['Period',d.range&&d.range.label],[],['Source','Orders','Sold','Provider cost','Profit','Margin %','Loss','Refunded count','Refunded amount','Pending count','Pending amount']];
+  (d.sources||[]).forEach(function(s){ L.push([s.label,s.orders,s.revenue,s.cost,s.profit,s.marginPct,s.lossAmount,s.refundedCount,s.refundedAmount,s.pendingCount,s.pendingAmount]); });
+  var t=d.totals||{};
+  L.push(['TOTAL',t.orders,t.revenue,t.providerCost,t.profit,t.marginPct,t.lossAmount,t.refundedCount,t.refundedAmount,t.pendingCount,t.pendingAmount]);
+  L.push([],['Date','Orders','Sold','Provider cost','Profit']);
+  (d.daily||[]).forEach(function(x){ L.push([x.date,x.orders,x.revenue,x.cost,x.profit]); });
+  var csv=L.map(function(r){return r.map(q).join(',');}).join('\n');
+  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='sales-summary-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove();
+}
 </script>
 <script src="/js/admin-stevo.js?v=3"></script>
 </body>
