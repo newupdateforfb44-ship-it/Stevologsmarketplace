@@ -248,9 +248,9 @@ a{color:inherit}
       <div class="gd-f"><label>Nearest landmark <span style="opacity:.6">(optional)</span></label><input id="landmark" maxlength="120" placeholder="e.g. Opposite First Bank"></div>
       <div class="gd-row2">
         <div class="gd-f" data-f="city"><label>City / Town</label><input id="city" maxlength="80" placeholder="e.g. Ikeja"><div class="err">Enter the city or town.</div></div>
-        <div class="gd-f" data-f="state"><label id="stateLbl">State</label><select id="state"><option value="">Select state</option></select><input id="stateTxt" maxlength="60" placeholder="State / Province / Region" style="display:none"><div class="err" id="stateErr">Select the state.</div></div>
+        <div class="gd-f" data-f="state"><label id="stateLbl">State</label><select id="state" data-native><option value="">Select state</option></select><input id="stateTxt" maxlength="60" placeholder="State / Province / Region" style="display:none" hidden><div class="err" id="stateErr">Select the state.</div></div>
       </div>
-      <div class="gd-f" data-f="postalCode" id="postalWrap" style="display:none"><label>Postal / ZIP code</label><input id="postalCode" maxlength="16" autocomplete="postal-code" placeholder="e.g. 90210 or M5V 2T6"><div class="err">Enter the postal / ZIP code.</div></div>
+      <div class="gd-f" data-f="postalCode" id="postalWrap" style="display:none"><label>Postal / ZIP code</label><input id="postalCode" maxlength="16" autocomplete="postal-code" placeholder="e.g. 90210 or M5V 2T6 (type N/A if none)"><div class="err">Enter the postal / ZIP code.</div></div>
     </div>
     <div class="gd-panel">
       <h3>Extras <span style="opacity:.6;font-weight:600;font-size:13px">(optional)</span></h3>
@@ -471,10 +471,24 @@ var FIELDS=['recipientName','recipientPhone','address','landmark','city','state'
 var COUNTRIES=[{code:'NG',name:'Nigeria'}];
 function isNG(){return $('country').value==='NG'}
 function countryName(c){for(var i=0;i<COUNTRIES.length;i++)if(COUNTRIES[i].code===c)return COUNTRIES[i].name;return c||''}
+var STATEDATA=null,HAS_LIST=true;
+function loadStateData(){
+  if(STATEDATA)return;
+  fetch('/js/country-states.json').then(function(r){return r.json()}).then(function(d){STATEDATA=d||{};applyCountry()}).catch(function(){STATEDATA={};applyCountry()});
+}
+function stateList(code){return code==='NG'?STATES:(STATEDATA&&STATEDATA[code])||null}
 function applyCountry(){
-  var ng=isNG();
-  $('state').style.display=ng?'':'none';$('stateTxt').style.display=ng?'none':'';
-  $('stateLbl').innerHTML=ng?'State':'State / Province / Region <span style="opacity:.6">(optional)</span>';
+  var code=$('country').value||'NG',ng=code==='NG',list=stateList(code);
+  if(!ng&&!STATEDATA){list=null;loadStateData()}
+  HAS_LIST=!!list;
+  var sel=$('state'),prev=sel.value||(S.delivery&&S.delivery.state)||'';
+  if(list){
+    sel.innerHTML='<option value="">Select '+(ng?'state':'state / province / region')+'</option>'+list.map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('');
+    if(list.indexOf(prev)>-1)sel.value=prev;
+  }
+  sel.style.display=list?'':'none';sel.hidden=!list;
+  $('stateTxt').style.display=list?'none':'';$('stateTxt').hidden=!!list;
+  $('stateLbl').innerHTML=list?(ng?'State':'State / Province / Region'):'State / Province / Region <span style="opacity:.6">(optional)</span>';
   $('stateErr').textContent='Select the state.';
   $('postalWrap').style.display=ng?'none':'';
   $('city').placeholder=ng?'e.g. Ikeja':'e.g. Houston';
@@ -489,24 +503,24 @@ function loadCountries(){
     COUNTRIES.sort(function(a,b){return a.name.localeCompare(b.name)});
     var cur=$('country').value||'NG',sel=$('country');sel.innerHTML='';
     COUNTRIES.forEach(function(c){var o=document.createElement('option');o.value=c.code;o.textContent=c.name;sel.appendChild(o)});
-    sel.value=(S.delivery&&S.delivery.country)||cur;applyCountry();
+    sel.value=(S.delivery&&S.delivery.country)||cur;applyCountry();sel.dispatchEvent(new Event('change',{bubbles:true}));
   }).catch(function(){});
 }
 $('country').addEventListener('change',applyCountry);
 function fillDelivery(){
   var d=S.delivery||{};
   if(d.country&&$('country').querySelector('option[value="'+d.country+'"]'))$('country').value=d.country;
+  applyCountry();
   if(d.country&&d.country!=='NG'&&d.state&&!d.stateTxt)d.stateTxt=d.state;
   FIELDS.forEach(function(f){if($(f)&&d[f]!=null&&$(f).value==='')$(f).value=d[f]});
-  applyCountry();
   var t=new Date();t.setDate(t.getDate()+1);$('deliveryDate').min=t.toISOString().slice(0,10);
 }
-function readDelivery(){var d={};FIELDS.forEach(function(f){d[f]=($(f).value||'').trim()});d.country=$('country').value||'NG';d.countryName=countryName(d.country);if(d.country!=='NG')d.state=d.stateTxt;else d.postalCode=d.postalCode||'';return d}
+function readDelivery(){var d={};FIELDS.forEach(function(f){d[f]=($(f).value||'').trim()});d.country=$('country').value||'NG';d.countryName=countryName(d.country);d.state=HAS_LIST?$('state').value:d.stateTxt;if(d.country==='NG')d.postalCode='';return d}
 function setBad(n,b){var el=document.querySelector('[data-f="'+n+'"]');if(el)el.classList.toggle('bad',!!b)}
 document.addEventListener('input',function(e){var f=e.target.closest('[data-f]');if(f)f.classList.remove('bad')});
 function validateDelivery(d){
   var ng=d.country==='NG';var ph=function(v){var n=v.replace(/\D/g,'');return n.length>=(ng?10:7)&&n.length<=15};
-  var bad={recipientName:d.recipientName.length<2,recipientPhone:!ph(d.recipientPhone),address:d.address.length<8,city:d.city.length<2,state:ng&&!d.state,postalCode:!ng&&d.postalCode.length<2};
+  var bad={recipientName:d.recipientName.length<2,recipientPhone:!ph(d.recipientPhone),address:d.address.length<8,city:d.city.length<2,state:HAS_LIST&&!d.state,postalCode:!ng&&d.postalCode.length<2};
   var first=null;Object.keys(bad).forEach(function(k){setBad(k,bad[k]);if(bad[k]&&!first)first=k});
   if(first){var el=document.querySelector('[data-f="'+first+'"]');el.scrollIntoView({behavior:'smooth',block:'center'});var i=el.querySelector('input,select,textarea');if(i)i.focus({preventScroll:true})}
   return !first;
@@ -647,7 +661,6 @@ function loadRequests(){
 
 /* ---------- boot ---------- */
 (function(){
-  var sel=$('state');STATES.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o)});
   applyCountry();loadCountries();
   api('/api/gifts/catalog').then(function(c){
     if(!c.enabled){go('off');return}
