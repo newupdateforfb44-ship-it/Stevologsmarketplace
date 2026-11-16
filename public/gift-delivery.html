@@ -243,13 +243,14 @@ a{color:inherit}
     </div>
     <div class="gd-panel">
       <h3>Delivery address</h3>
-      <div class="gd-country"><span>🇳🇬</span><div><b>Nigeria</b><small>We currently deliver to addresses within Nigeria only.</small></div></div>
+      <div class="gd-f" data-f="country"><label>Country</label><select id="country"><option value="NG">Nigeria</option></select><div class="err">Select the delivery country.</div></div>
       <div class="gd-f" data-f="address"><label>Street address</label><textarea id="address" maxlength="250" placeholder="House number, street, area"></textarea><div class="err">Please enter the full street address.</div></div>
       <div class="gd-f"><label>Nearest landmark <span style="opacity:.6">(optional)</span></label><input id="landmark" maxlength="120" placeholder="e.g. Opposite First Bank"></div>
       <div class="gd-row2">
         <div class="gd-f" data-f="city"><label>City / Town</label><input id="city" maxlength="80" placeholder="e.g. Ikeja"><div class="err">Enter the city or town.</div></div>
-        <div class="gd-f" data-f="state"><label>State</label><select id="state"><option value="">Select state</option></select><div class="err">Select the state.</div></div>
+        <div class="gd-f" data-f="state"><label id="stateLbl">State</label><select id="state"><option value="">Select state</option></select><input id="stateTxt" maxlength="60" placeholder="State / Province / Region" style="display:none"><div class="err" id="stateErr">Select the state.</div></div>
       </div>
+      <div class="gd-f" data-f="postalCode" id="postalWrap" style="display:none"><label>Postal / ZIP code</label><input id="postalCode" maxlength="16" autocomplete="postal-code" placeholder="e.g. 90210 or M5V 2T6"><div class="err">Enter the postal / ZIP code.</div></div>
     </div>
     <div class="gd-panel">
       <h3>Extras <span style="opacity:.6;font-weight:600;font-size:13px">(optional)</span></h3>
@@ -466,18 +467,46 @@ $('btnOrders').onclick=function(){go('orders')};$('doneOrders').onclick=function
 $('toDelivery').onclick=function(){if(!cartCount())return;fillDelivery();go('delivery')};
 
 /* ---------- delivery ---------- */
-var FIELDS=['recipientName','recipientPhone','address','landmark','city','state','deliveryDate','giftMessage','contactPhone'];
+var FIELDS=['recipientName','recipientPhone','address','landmark','city','state','stateTxt','postalCode','deliveryDate','giftMessage','contactPhone'];
+var COUNTRIES=[{code:'NG',name:'Nigeria'}];
+function isNG(){return $('country').value==='NG'}
+function countryName(c){for(var i=0;i<COUNTRIES.length;i++)if(COUNTRIES[i].code===c)return COUNTRIES[i].name;return c||''}
+function applyCountry(){
+  var ng=isNG();
+  $('state').style.display=ng?'':'none';$('stateTxt').style.display=ng?'none':'';
+  $('stateLbl').innerHTML=ng?'State':'State / Province / Region <span style="opacity:.6">(optional)</span>';
+  $('stateErr').textContent='Select the state.';
+  $('postalWrap').style.display=ng?'none':'';
+  $('city').placeholder=ng?'e.g. Ikeja':'e.g. Houston';
+  $('address').placeholder=ng?'House number, street, area':'Street address, apartment / unit number';
+  $('landmark').placeholder=ng?'e.g. Opposite First Bank':'e.g. Gate code, building name';
+  $('recipientPhone').placeholder=ng?'08012345678':'+1 555 123 4567 (with country code)';
+}
+function loadCountries(){
+  fetch('/api/intl/countries',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){
+    var l=(d&&d.countries)||[];if(l.length<20)return;
+    COUNTRIES=l.map(function(c){return {code:c.code||c.c,name:c.name||c.n}}).filter(function(c){return c.code&&c.name});
+    COUNTRIES.sort(function(a,b){return a.name.localeCompare(b.name)});
+    var cur=$('country').value||'NG',sel=$('country');sel.innerHTML='';
+    COUNTRIES.forEach(function(c){var o=document.createElement('option');o.value=c.code;o.textContent=c.name;sel.appendChild(o)});
+    sel.value=(S.delivery&&S.delivery.country)||cur;applyCountry();
+  }).catch(function(){});
+}
+$('country').addEventListener('change',applyCountry);
 function fillDelivery(){
   var d=S.delivery||{};
+  if(d.country&&$('country').querySelector('option[value="'+d.country+'"]'))$('country').value=d.country;
+  if(d.country&&d.country!=='NG'&&d.state&&!d.stateTxt)d.stateTxt=d.state;
   FIELDS.forEach(function(f){if($(f)&&d[f]!=null&&$(f).value==='')$(f).value=d[f]});
+  applyCountry();
   var t=new Date();t.setDate(t.getDate()+1);$('deliveryDate').min=t.toISOString().slice(0,10);
 }
-function readDelivery(){var d={};FIELDS.forEach(function(f){d[f]=($(f).value||'').trim()});return d}
+function readDelivery(){var d={};FIELDS.forEach(function(f){d[f]=($(f).value||'').trim()});d.country=$('country').value||'NG';d.countryName=countryName(d.country);if(d.country!=='NG')d.state=d.stateTxt;else d.postalCode=d.postalCode||'';return d}
 function setBad(n,b){var el=document.querySelector('[data-f="'+n+'"]');if(el)el.classList.toggle('bad',!!b)}
 document.addEventListener('input',function(e){var f=e.target.closest('[data-f]');if(f)f.classList.remove('bad')});
 function validateDelivery(d){
-  var ph=function(v){var n=v.replace(/\D/g,'');return n.length>=10&&n.length<=15};
-  var bad={recipientName:d.recipientName.length<2,recipientPhone:!ph(d.recipientPhone),address:d.address.length<8,city:d.city.length<2,state:!d.state};
+  var ng=d.country==='NG';var ph=function(v){var n=v.replace(/\D/g,'');return n.length>=(ng?10:7)&&n.length<=15};
+  var bad={recipientName:d.recipientName.length<2,recipientPhone:!ph(d.recipientPhone),address:d.address.length<8,city:d.city.length<2,state:ng&&!d.state,postalCode:!ng&&d.postalCode.length<2};
   var first=null;Object.keys(bad).forEach(function(k){setBad(k,bad[k]);if(bad[k]&&!first)first=k});
   if(first){var el=document.querySelector('[data-f="'+first+'"]');el.scrollIntoView({behavior:'smooth',block:'center'});var i=el.querySelector('input,select,textarea');if(i)i.focus({preventScroll:true})}
   return !first;
@@ -495,7 +524,7 @@ function renderReview(){
   $('revItems').innerHTML=cartLines().map(function(l){
     return '<div class="gd-line"><div class="gd-thumb">'+(l.p.image?'<img src="'+esc(l.p.image)+'" alt="">':'\uD83C\uDF81')+'</div><div class="gd-li"><b>'+esc(l.p.name)+'</b><small>'+l.qty+' \u00D7 '+money(l.p.price)+'</small></div><div style="font-weight:800;white-space:nowrap">'+money(l.p.price*l.qty)+'</div></div>';
   }).join('');
-  $('revAddr').innerHTML='<b>'+esc(d.recipientName)+'</b> \u00B7 '+esc(d.recipientPhone)+'<br>'+esc(d.address)+(d.landmark?' <span style="color:var(--g-t2)">('+esc(d.landmark)+')</span>':'')+'<br>'+esc(d.city)+', '+esc(d.state)
+  $('revAddr').innerHTML='<b>'+esc(d.recipientName)+'</b> \u00B7 '+esc(d.recipientPhone)+'<br>'+esc(d.address)+(d.landmark?' <span style="color:var(--g-t2)">('+esc(d.landmark)+')</span>':'')+'<br>'+esc(d.city)+(d.state?', '+esc(d.state):'')+(d.postalCode?' '+esc(d.postalCode):'')+'<br>'+esc(d.countryName||countryName(d.country))
     +(d.deliveryDate?'<br><span style="color:var(--g-t2)">Preferred date: '+esc(d.deliveryDate)+'</span>':'')+(d.giftMessage?'<br><span style="color:var(--g-t2)">Card: \u201C'+esc(d.giftMessage)+'\u201D</span>':'');
   $('revSum').innerHTML=sumHtml();$('revErr').classList.remove('show');
   refreshPayState();
@@ -517,7 +546,7 @@ $('placeOrder').onclick=function(){
   api('/api/gifts/orders',{method:'POST',body:JSON.stringify({
     clientRef:S.clientRef,items:cartLines().map(function(l){return {productId:l.p.id,qty:l.qty}}),
     recipientName:d.recipientName,recipientPhone:d.recipientPhone,contactPhone:d.contactPhone,address:d.address,landmark:d.landmark,
-    city:d.city,state:d.state,deliveryDate:d.deliveryDate,giftMessage:d.giftMessage
+    city:d.city,state:d.state,country:d.country,postalCode:d.postalCode,deliveryDate:d.deliveryDate,giftMessage:d.giftMessage
   })}).then(function(r){
     S.cart={};S.clientRef='';try{sessionStorage.removeItem('gd_ref')}catch(e){}save();updateBar();
     if(r.balance!=null)setBalance(r.balance);showDone(r.order);
@@ -534,7 +563,7 @@ function showDone(o){
   $('doneSum').innerHTML='<h3>Receipt</h3>'+o.items.map(function(i){return '<div class="gd-sum"><span>'+i.qty+' \u00D7 '+esc(i.name)+'</span><span>'+money(i.price*i.qty)+'</span></div>'}).join('')
     +(o.deliveryFee?'<div class="gd-sum"><span>Delivery</span><span>'+money(o.deliveryFee)+'</span></div>':'')
     +'<div class="gd-sum tot"><span>Paid</span><b>'+money(o.total)+'</b></div>'
-    +'<div class="gd-sum"><span>To</span><span style="text-align:right">'+esc(o.recipientName)+', '+esc(o.city)+'</span></div>';
+    +'<div class="gd-sum"><span>To</span><span style="text-align:right">'+esc(o.recipientName)+', '+esc(o.city)+(o.country&&o.country!=='NG'?', '+esc(countryName(o.country)):'')+'</span></div>';
   go('done');
 }
 
@@ -555,7 +584,7 @@ function loadOrders(){
       return '<div class="gd-panel gd-ord"><div class="hd"><b>'+esc(o.ref)+'</b><span class="gd-stat '+cls+'">'+esc(o.statusLabel)+'</span></div>'
        +'<p style="color:var(--g-t1)">'+o.items.map(function(i){return i.qty+' \u00D7 '+esc(i.name)}).join(', ')+'</p>'
        +'<p>Paid <b style="color:var(--g-t1)">'+money(o.total)+'</b>'+(o.status==='cancelled'?' \u00B7 refunded to your wallet':'')+'</p>'
-       +'<p>To: '+esc(o.recipientName)+', '+esc(o.address)+', '+esc(o.city)+', '+esc(o.state)+'</p>'
+       +'<p>To: '+esc(o.recipientName)+', '+esc(o.address)+', '+esc(o.city)+(o.state?', '+esc(o.state):'')+(o.postalCode?' '+esc(o.postalCode):'')+(o.country&&o.country!=='NG'?', '+esc(countryName(o.country)):'')+'</p>'
        +(o.adminNote?'<p style="color:var(--g-gold)">Note from admin: '+esc(o.adminNote)+'</p>':'')
        +track(o)+'<p style="font-size:12px;margin-top:10px">'+new Date(o.createdAt).toLocaleString()+'</p>'
        +(o.helpUrl&&o.status==='pending'?'<a class="gd-btn wa" target="_blank" rel="noopener" href="'+esc(o.helpUrl)+'" style="margin-top:8px;padding:11px;font-size:14px"><svg viewBox="0 0 24 24"><use href="#i-wa"/></svg> Need help? Chat with admin</a>':'')+'</div>';
@@ -568,7 +597,7 @@ function loadOrders(){
 function waCartText(){
   var d=S.delivery||{};
   return 'Hello, I want to confirm the final price for my gift order.\n\n'+cartLines().map(function(l){return l.qty+' x '+l.p.name+' ('+money(l.p.price)+')'}).join('\n')
-   +'\n\nTotal on site: '+money(total())+(d.recipientName?'\nDeliver to: '+d.recipientName+', '+(d.city||'')+(d.state?', '+d.state:''):'');
+   +'\n\nTotal on site: '+money(total())+(d.recipientName?'\nDeliver to: '+d.recipientName+', '+(d.city||'')+(d.state?', '+d.state:'')+(d.postalCode?' '+d.postalCode:'')+', '+(d.countryName||countryName(d.country)):'');
 }
 function renderCheckoutNote(){
   var t=S.checkoutNote||'Prices shown are our listed prices. For the final price confirmation, please contact our admin on WhatsApp.';
@@ -619,6 +648,7 @@ function loadRequests(){
 /* ---------- boot ---------- */
 (function(){
   var sel=$('state');STATES.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o)});
+  applyCountry();loadCountries();
   api('/api/gifts/catalog').then(function(c){
     if(!c.enabled){go('off');return}
     S.products=c.products||[];S.byId={};S.products.forEach(function(p){S.byId[p.id]=p});
