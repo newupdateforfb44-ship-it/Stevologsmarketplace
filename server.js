@@ -1637,9 +1637,12 @@ require('./lib/price-adjust').register(app, { mongoose, anyAdminAuth });
 require('./lib/otp-suite')(app, { mongoose, User, Transaction, auth, anyAdminAuth });
 // Airtime / Data / Cable TV (VTUGATE) - see lib/vtu.js
 require('./lib/vtu')({ app, mongoose, User, Transaction, auth, anyAdminAuth });
+// Gift Delivery (catalogue, address, wallet checkout, admin email + status) - see lib/gifts.js
+require('./lib/gifts').register(app, { mongoose, User, Transaction, auth, anyAdminAuth, upload, fileUrl, getSiteLinks, sendAdminEmail });
 // Live purchases feed + Buy Number notice banner
 require('./lib/live-purchases').register(app, { User, Transaction, auth });
 require('./lib/number-notice').register(app, { mongoose, adminAuth });
+require('./lib/page-notices').register(app, { mongoose, adminAuth });
 // Websites for sale - see lib/websites.js
 require('./lib/websites').register(app, { mongoose, anyAdminAuth, auth, sendAdminEmail });
 // Tutorial library (admin adds videos/pictures/descriptions, customers watch free) - see lib/tutorials.js
