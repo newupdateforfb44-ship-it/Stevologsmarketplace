@@ -57,7 +57,9 @@ details[open]>.how-sum::after{content:'–'}
 </style><link rel="stylesheet" href="/css/stevo-theme.css?v=3"/>
 
 
-<link rel="stylesheet" href="/css/stevo-palette.css?v=1"></head><body><main class="wrap"><a href="/buy-number">← All number services</a><h1>Temp Email</h1><p class="muted">Get a temporary email, use it on a website, and receive the verification code here. Paid from your NGN wallet.</p>
+<link rel="stylesheet" href="/css/stevo-palette.css?v=1"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/stevo-standard.css?v=1">
+</head><body><main class="wrap"><a href="/buy-number">← All number services</a><h1>Temp Email</h1><p class="muted">Get a temporary email, use it on a website, and receive the verification code here. Paid from your NGN wallet.</p>
 <div class="panel">
 <label for="type">Step 1 — Email type</label><select id="type"><option value="1">Server 1 — Gmail (pick the service)</option><option value="2">Server 2 — Outlook &amp; more (pick the website)</option></select>
 <div id="t1"><label for="d1">Step 2 — Mail domain</label><select id="d1"></select><label for="svc1">Step 3 — Service</label><select id="svc1" disabled><option value="">Loading…</option></select></div>
@@ -100,7 +102,7 @@ async function checkOne(id,silent){try{const d=await api('/api/temp-email/code/'
 async function cancelOne(id){if(!(await StevoUI.confirm('Cancel this email and get a refund?',{title:'Cancel & refund',okText:'Cancel email'})))return;try{const d=await api('/api/temp-email/cancel/'+encodeURIComponent(id),{method:'POST',body:'{}'});const i=orders.findIndex(o=>o.id===id);if(i>=0)orders[i]=d.order;renderOrders();notice('Cancelled — your refund was added to your wallet.')}catch(e){notice(e.message)}}
 if(!token())location.href='/login?next=/temp-email';else{loadOptions();loadOrders()}
 </script>
-<script src="/js/stevo-select-sheet.js?v=3" defer></script>
+<script src="/js/stevo-select-sheet.js?v=5" defer></script>
 <script src="/js/app-shell.js?v=3" defer></script>
 <script src="/js/section-tabs.js?v=1" defer></script>
 <script src="/js/page-transitions.js?v=1" defer></script>

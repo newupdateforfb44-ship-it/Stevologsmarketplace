@@ -57,7 +57,9 @@ details[open]>.how-sum::after{content:'–'}
 </style><link rel="stylesheet" href="/css/stevo-theme.css?v=3"/>
 
 
-<link rel="stylesheet" href="/css/stevo-palette.css?v=1"></head><body><main class="wrap"><a href="/buy-number">← All number services</a><h1>Rent a Number</h1><p class="muted">Keep a number for days or months and receive as many SMS messages as you need. Paid from your NGN wallet.</p>
+<link rel="stylesheet" href="/css/stevo-palette.css?v=1"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/stevo-standard.css?v=1">
+</head><body><main class="wrap"><a href="/buy-number">← All number services</a><h1>Rent a Number</h1><p class="muted">Keep a number for days or months and receive as many SMS messages as you need. Paid from your NGN wallet.</p>
 <div class="panel"><div class="tabs"><button type="button" id="tabA" class="on">Number rental</button><button type="button" id="tabB">Dedicated (one service)</button></div>
 <div id="paneA"><label for="cA">Step 1 — Pick the country</label><select id="cA"><option value="">Loading…</option></select><label for="pA">Step 2 — Pick the period</label><select id="pA" disabled><option value="">Select a country first</option></select><div id="noteA" class="muted" style="margin-top:8px"></div></div>
 <div id="paneB" class="hide"><label for="cB">Step 1 — Pick the country</label><select id="cB"><option value="">Loading…</option></select><label for="pB">Step 2 — Pick the service &amp; period</label><select id="pB" disabled><option value="">Select a country first</option></select><div class="muted" style="margin-top:8px">A dedicated number works for one service only and cannot be cancelled after purchase.</div></div>
@@ -100,7 +102,7 @@ async function doRenew(id){const v=$('rs-'+id).value;if(!(await StevoUI.confirm(
 async function cancelOne(id){if(!(await StevoUI.confirm('Cancel this rental and get a refund?',{title:'Cancel & refund',okText:'Cancel rental'})))return;try{const d=await api('/api/rentals/cancel/'+encodeURIComponent(id),{method:'POST',body:'{}'});const i=orders.findIndex(o=>o.id===id);if(i>=0)orders[i]=d.order;renderOrders();notice('Cancelled — your refund was added to your wallet.')}catch(e){notice(e.message)}}
 if(!token())location.href='/login?next=/rental';else{loadCountries();loadOrders()}
 </script>
-<script src="/js/stevo-select-sheet.js?v=3" defer></script>
+<script src="/js/stevo-select-sheet.js?v=5" defer></script>
 <script src="/js/app-shell.js?v=3" defer></script>
 <script src="/js/section-tabs.js?v=1" defer></script>
 <script src="/js/page-transitions.js?v=1" defer></script>

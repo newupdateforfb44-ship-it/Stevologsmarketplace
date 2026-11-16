@@ -41,6 +41,8 @@ input,select{width:100%;padding:13px;border-radius:10px;background:#0a0a16;color
 </style><link rel="stylesheet" href="/css/stevo-theme.css?v=3"/>
 
 
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/stevo-standard.css?v=1">
 </head><body>
 <main class="wrap"><a class="back" href="/dashboard">← Back</a>
 <h1>Airtime &amp; Data</h1><p class="muted">Airtime, data bundles and cable TV — delivered instantly from your wallet.</p>
@@ -136,7 +138,7 @@ $('go').onclick=async()=>{
 async function loadOrders(){const r=await api('/api/vtu/orders');const rows=r.ok?r.j:[];
  $('orders').innerHTML=rows.length?rows.map(o=>`<div class="ord"><span>${esc(o.label)}<br><small class="muted">${new Date(o.createdAt).toLocaleString()}</small></span><span style="text-align:right">${money(o.amount)}<br><small class="muted">${esc(o.status)}</small></span></div>`).join(''):'No orders yet.';}
 loadServices();loadOrders();
-</script><script src="/js/stevo-select-sheet.js?v=3" defer></script>
+</script><script src="/js/stevo-select-sheet.js?v=5" defer></script>
 <script src="/js/app-shell.js?v=3" defer></script>
 <script src="/js/section-tabs.js?v=1" defer></script>
 <script src="/js/page-transitions.js?v=1" defer></script>

@@ -6,6 +6,7 @@
 <meta name="description" content="Send flowers, jewellery and thoughtful gifts to your loved ones. Pay from your wallet and we deliver.">
 <script src="/js/auth-keeper.js?v=1"></script>
 <link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/css/stevo-select-sheet.css?v=4">
 <link rel="stylesheet" href="/brand.css">
 <link rel="manifest" href="/manifest.json"/>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
@@ -166,6 +167,14 @@ a{color:inherit}
 .gd-sheet .gd-f{margin-bottom:12px}
 .gd-sheet .gd-row2{margin-bottom:0}
 .gd-sheet .sub{margin:0 0 14px;color:var(--g-t2);font-size:14px;line-height:1.5;white-space:normal}
+
+.gd-country{display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:12px;border-radius:12px;background:var(--g-card2);border:1px solid var(--g-line)}
+.gd-country span{font-size:24px;line-height:1}.gd-country b{display:block;font-size:14px}.gd-country small{display:block;color:var(--g-t2);font-size:12.5px;margin-top:2px}
+.gd-f .ks-sheet-trigger{margin-top:0!important;border:1px solid var(--g-line)!important;background:var(--g-card2)!important;border-radius:12px!important;min-height:50px}
+.gd-f.bad .ks-sheet-trigger{border-color:var(--g-err)!important}
+.gd-tools .ks-sheet-trigger{width:auto!important;flex:none;min-width:150px;max-width:190px;margin:0!important;min-height:48px;border-radius:14px!important;background:var(--g-card)!important;border:1px solid var(--g-line)!important}
+.gd-tools .ks-sheet-symbol,.gd-tools .ks-sheet-subtitle,.gd-f .ks-sheet-subtitle{display:none!important}
+.gd-tools .ks-sheet-title{font-size:13.5px}
 </style>
 </head><body>
 
@@ -196,7 +205,7 @@ a{color:inherit}
     <div id="notice"></div>
     <div class="gd-tools">
       <input class="gd-search" id="q" type="search" placeholder="Search gifts" autocomplete="off" aria-label="Search gifts">
-      <select class="gd-sort" id="sort" aria-label="Sort gifts"><option value="featured">Featured</option><option value="new">Newest</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select>
+      <select class="gd-sort" id="sort" aria-label="Sort gifts" data-label="Sort gifts"><option value="featured">Featured</option><option value="new">Newest</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select>
     </div>
     <div class="gd-chips" id="chips"></div>
     <div id="bestWrap" style="display:none">
@@ -234,6 +243,7 @@ a{color:inherit}
     </div>
     <div class="gd-panel">
       <h3>Delivery address</h3>
+      <div class="gd-country"><span>🇳🇬</span><div><b>Nigeria</b><small>We currently deliver to addresses within Nigeria only.</small></div></div>
       <div class="gd-f" data-f="address"><label>Street address</label><textarea id="address" maxlength="250" placeholder="House number, street, area"></textarea><div class="err">Please enter the full street address.</div></div>
       <div class="gd-f"><label>Nearest landmark <span style="opacity:.6">(optional)</span></label><input id="landmark" maxlength="120" placeholder="e.g. Opposite First Bank"></div>
       <div class="gd-row2">
@@ -627,5 +637,6 @@ function loadRequests(){
 </script>
 <script src="/js/page-transitions.js?v=1" defer></script>
 <script src="/js/loader-failsafe.js?v=1" defer></script>
+<script src="/js/stevo-select-sheet.js?v=5" defer></script>
 <script src="/js/page-notice.js?v=1" defer></script>
 </body></html>
