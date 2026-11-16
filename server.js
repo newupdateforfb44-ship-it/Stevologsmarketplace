@@ -1631,7 +1631,17 @@ const { brandLogoFor } = require('./lib/brand-logos').register({
 require('./lib/market2').register(app, { mongoose, User, Transaction, auth, anyAdminAuth, sendAdminEmail, brandLogoFor });
 // Marketplace 3 (Sujan Department reseller API) - see lib/market3.js
 require('./lib/market3').register(app, { mongoose, User, Transaction, auth, anyAdminAuth, sendAdminEmail, brandLogoFor });
+// Price Adjustments (admin add / minus money per provider) - see lib/price-adjust.js
+require('./lib/price-adjust').register(app, { mongoose, anyAdminAuth });
+// Buy Number 2 + Temp Email + Rentals (SMS-COOL) - see lib/otp-suite.js
 require('./lib/otp-suite')(app, { mongoose, User, Transaction, auth, anyAdminAuth });
+// Airtime / Data / Cable TV (VTUGATE) - see lib/vtu.js
+require('./lib/vtu')({ app, mongoose, User, Transaction, auth, anyAdminAuth });
+// Live purchases feed + Buy Number notice banner
+require('./lib/live-purchases').register(app, { User, Transaction, auth });
+require('./lib/number-notice').register(app, { mongoose, adminAuth });
+// Websites for sale - see lib/websites.js
+require('./lib/websites').register(app, { mongoose, anyAdminAuth, auth, sendAdminEmail });
 // Tutorial library (admin adds videos/pictures/descriptions, customers watch free) - see lib/tutorials.js
 require('./lib/tutorials').register(app, { mongoose, anyAdminAuth, uploadMw: depositTutorialUpload, fileUrl });
 
@@ -1646,18 +1656,19 @@ app.get('/api/admin/providers/status', anyAdminAuth, async (req, res) => {
     };
     const [numberCfg, otpCfg, market2Cfg, market3Cfg, boostCfg] = await Promise.all([
       getNumberServerConfig().catch(() => null),
-      getDoc('OtpSuiteConfig', { key: 'main' }),
+      getDoc('SmsCoolConfig', { key: 'main' }),
       getDoc('Market2Config', { key: 'main' }),
       getDoc('Market3Config', { key: 'main' }),
       getDoc('BoostSettings', { _id: 'singleton' })
     ]);
     const rows = [
       { id: 'grizzly', name: 'Grizzly SMS — Buy Number 1', configured: !!String(process.env.GRIZZLY_API_KEY || '').trim(), enabled: numberCfg?.server2Enabled !== false, credentialSource: 'Render environment: GRIZZLY_API_KEY' },
-      { id: 'otpSuite', name: 'OTP Suite — Buy Number 2', configured: !!(otpCfg?.apiKeyCipher || process.env.OTP_SUITE_API_KEY), enabled: otpCfg?.enabled !== false, credentialSource: 'Admin provider settings or Render environment' },
+      { id: 'otpSuite', name: 'SMS-COOL — Buy Number 2 / Temp Email / Rentals', configured: !!(otpCfg?.apiKeyCipher || process.env.SMS_COOL_API_KEY), enabled: otpCfg?.enabled !== false, credentialSource: 'Admin provider settings or Render environment' },
       { id: 'rakib', name: 'RakibSocials — Marketplace 2', configured: !!(market2Cfg?.apiKeyCipher || process.env.RAKIB_API_KEY), enabled: market2Cfg?.market2Enabled !== false, credentialSource: 'Admin Marketplace 2 settings or Render environment' },
       { id: 'sujan', name: 'Sujan Department — Marketplace 3', configured: !!(market3Cfg?.sujanKeyCipher || process.env.SUJAN_API_KEY), enabled: market3Cfg?.market3Enabled !== false, credentialSource: 'Admin Marketplace 3 settings or Render environment' },
       { id: 'reallySimpleSocial', name: 'Really Simple Social — Boosting 1', configured: !!(boostCfg?.apiKey || process.env.BOOST_API_KEY), enabled: !!boostCfg?.enabled, credentialSource: 'Admin Boosting settings or Render environment' },
-      { id: 'nova', name: 'NovaSolution — Buy Number 3 / Boosting 2', configured: !!String(process.env.NOVA_API_KEY || '').trim(), enabled: !!String(process.env.NOVA_API_KEY || '').trim(), credentialSource: 'Render environment: NOVA_API_KEY' }
+      { id: 'vinasmm', name: 'Vinasmm — Boosting 2', configured: !!String(process.env.VINASMM_API_KEY || '').trim(), enabled: !!String(process.env.VINASMM_API_KEY || '').trim(), credentialSource: 'Render environment: VINASMM_API_KEY' },
+      { id: 'nova', name: 'NovaSolution — Buy Number 3', configured: !!String(process.env.NOVA_API_KEY || '').trim(), enabled: !!String(process.env.NOVA_API_KEY || '').trim(), credentialSource: 'Render environment: NOVA_API_KEY' }
     ].map(x => ({ ...x, ready: !!x.configured && !!x.enabled, state: !x.configured ? 'missing_credentials' : (!x.enabled ? 'disabled' : 'ready') }));
     res.set('Cache-Control', 'no-store');
     res.json({ providers: rows, readyCount: rows.filter(x => x.ready).length, checkedAt: new Date().toISOString() });
@@ -1665,7 +1676,7 @@ app.get('/api/admin/providers/status', anyAdminAuth, async (req, res) => {
 });
 // Welcome popup (WhatsApp channel promo) - settings editable in Admin -> Welcome Popup
 require('./lib/welcomepopup').register(app, { mongoose, adminAuth });
-// Boosting 2 is active through NovaSolution; see lib/boost2.js.
+// Boosting 2 is active through Vinasmm; see lib/boost2.js.
 function sanitizeUser(u) {
  return {
  id: u._id, name: u.name, email: u.email, balance: u.balance || 0,
@@ -7161,7 +7172,7 @@ app.get('/api/numbers/my-orders', auth, async (req, res) => {
  codeAddedAt: l.codeAddedAt || null, cancelledAt: l.cancelledAt || null, expiredAt: l.expiredAt || null, operator: l.operator && l.operator !== 'any' ? prettifyServiceName(l.operator) : '',
  refunded: l.status === 'expired' || l.status === 'cancelled' ? l.sellPrice : null
  }));
- const OtpSuiteOrder = mongoose.models.OtpSuiteOrder;
+ const OtpSuiteOrder = mongoose.models.SmsCoolOrder;
  if (OtpSuiteOrder) { const otp = await OtpSuiteOrder.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(100).lean(); combined.push(...otp.map(o => ({ id:o._id, product:'Buy Number 2', provider:'Buy Number 2', country:o.countryName || o.countryCode, phoneNumber:o.phoneNumber || '', status:o.status === 'received' || o.sms ? 'delivered' : o.status, code:o.sms || '', createdAt:o.createdAt, sellPrice:o.price || 0, checkPending:!!o.lastError, refunded:o.refunded ? (o.price || 0) : null }))); }
  combined.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
  res.json(combined);
@@ -7222,13 +7233,13 @@ app.get('/api/numbers/my-orders/search', auth, async (req, res) => {
  refunded: l.status === 'expired' || l.status === 'cancelled' ? l.sellPrice : null
  }));
  let allPageOrders = pageOrders;
- if (server === 'server1' && mongoose.models.OtpSuiteOrder) {
+ if (server === 'server1' && mongoose.models.SmsCoolOrder) {
    const otpQ = { userId: req.user._id };
    if (q) { const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); otpQ.$or = [{ phoneNumber: rx }, { serviceName: rx }, { countryName: rx }, { sms: rx }]; }
    if (status === 'delivered') otpQ.sms = { $nin: ['', null] };
    else if (status === 'pending') otpQ.status = { $in: ['pending','waiting','review'] };
    else if (status) otpQ.status = status;
-   const otpRows = await mongoose.models.OtpSuiteOrder.find(otpQ).sort({createdAt:-1}).limit(100).lean();
+   const otpRows = await mongoose.models.SmsCoolOrder.find(otpQ).sort({createdAt:-1}).limit(100).lean();
    allPageOrders = allPageOrders.concat(otpRows.map(o => ({id:o._id,product:'Buy Number 2',provider:'Buy Number 2',country:o.countryName||o.countryCode,phoneNumber:o.phoneNumber||'',status:o.sms?'delivered':o.status,code:o.sms||'',createdAt:o.createdAt,sellPrice:o.price||0,checkPending:!!o.lastError,refunded:o.refunded?(o.price||0):null})));
    allPageOrders.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
  }
@@ -8589,6 +8600,9 @@ app.get('/giveaways', (req, res) => (res.set('Cache-Control', 'no-store, must-re
 app.get('/buy-number', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'buy-number.html'))));
 app.get('/buy-number-1', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'buy-number-grizzly.html'))));
 app.get('/buy-number-grizzly', (req, res) => res.redirect(301, '/buy-number-1'));
+app.get('/vtu', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'vtu.html'))));
+app.get(['/airtime', '/data', '/cable'], (req, res) => res.redirect(301, '/vtu'));
+app.get('/websites', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'websites.html'))));
 app.get('/buy-number-2', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'buy-number-otp.html'))));
 app.get('/buy-number-otp', (req, res) => res.redirect(301, '/buy-number-2'));
 app.get('/buy-number-3', (req, res) => (res.set('Cache-Control', 'no-store, must-revalidate'), res.sendFile(path.join(__dirname, 'public', 'buy-number-nova.html'))));
