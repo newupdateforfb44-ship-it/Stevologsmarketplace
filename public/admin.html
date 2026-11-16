@@ -1191,6 +1191,13 @@ tr:hover td{background:rgba(255,255,255,.035)}
     <!-- ══════════════ BUYNUMBER 2 (Server 2 · GrizzlySMS) ══════════════ -->
     
 <!-- SLM-ADMIN-TABS -->
+<div id="tab-pagenotices" class="tab-panel">
+      <div class="sec">
+        <div class="sec-title"><svg class="icon i-pin" aria-hidden="true"><use href="#i-pin"/></svg> Page notices &amp; colours</div>
+        <div id="pnRoot">Loading…</div>
+      </div>
+    </div>
+
 <div id="tab-numnotice" class="tab-panel">
       <div class="sec">
         <div class="sec-title"><svg class="icon i-pin" aria-hidden="true"><use href="#i-pin"/></svg> Buy Number notice (WhatsApp login help)</div>
@@ -2476,11 +2483,7 @@ tr:hover td{background:rgba(255,255,255,.035)}
     <div id="tab-giftdelivery" class="tab-panel">
       <div class="sec">
         <div class="sec-title"><svg class="icon i-gift" aria-hidden="true"><use href="#i-gift"/></svg> Gift Delivery</div>
-        <div style="text-align:center;padding:36px 16px">
-          <div style="font-size:48px;line-height:1">&#127873;</div>
-          <div style="font-weight:800;font-size:1.2rem;margin:12px 0 6px">Coming soon</div>
-          <div style="font-size:.9rem;color:var(--t2)">Gift Delivery is not live yet. Customers see the same &ldquo;Coming soon&rdquo; message until it is ready.</div>
-        </div>
+        <div id="gdAdmRoot">Loading…</div>
       </div>
     </div>
     <div id="tab-chatadmin" class="tab-panel">
@@ -2976,6 +2979,7 @@ const ADMIN_NAV = [
     { tab:'n3adm', icon:'i-plug', label:'Buy Number 3', owner:true, keywords:'buy number 3 numbers sync services prices hide on off' },
     { tab:'kinglogos', icon:'i-zap', label:'Product logos', owner:true, keywords:'logo logos picture image facebook icon brand' },
     { tab:'numbers2', icon:'i-smartphone', label:'Server 2 — low SMS rate pools', owner:true },
+    { tab:'pagenotices', icon:'i-pin', label:'Page notices & colours', owner:true, keywords:'notice popup pop-up banner colour color theme rental temp email airtime data vtu websites boost marketplace message' },
     { tab:'numnotice', icon:'i-pin', label:'Number notice (WhatsApp help)', owner:true, keywords:'buy number notice banner whatsapp login help message vpn' },
     { tab:'otp2', icon:'i-smartphone', label:'Buy Number 2, Temp Email & Rentals', owner:true, keywords:'buy number 2 sms cool temp email rental rentals markup orders balance api key' },
     { tab:'priceadj', icon:'i-banknote', label:'Markup / Price adjustment', owner:true, keywords:'markup price adjust add subtract restore default buy number boost marketplace increase decrease' },
@@ -3018,7 +3022,7 @@ const ADMIN_NAV = [
     { tab:'notifbar',   icon:'i-bell',           label:'Notifications bar (post, edit, delete)', owner:true,
       keywords:'notification notifications notify notice announcement announcements broadcast popup alert message post edit delete bar' },
     { tab:'sitelinks',  icon:'i-link',           label:'Contact info & links', accent:'accent-green' },
-    { tab:'giftdelivery', icon:'i-gift',         label:'Gift Delivery', keywords:'gift delivery coming soon' },
+    { tab:'giftdelivery', icon:'i-gift',         label:'Gift Delivery', keywords:'gift gifts delivery flowers orders whatsapp address checkout' },
     { tab:'support',    icon:'i-message-circle',  label:'Support tickets' },
     { tab:'fraud',      icon:'i-shield',         label:'Fraud & security', owner:true },
     { tab:'staffadmin', icon:'i-headphones',     label:'Sub-admins',       owner:true },
@@ -3111,7 +3115,7 @@ function switchTab(name,el) {
   if(name==='campaigns')    cmpLoad();
   if(name==='logs')         { loadLogs(); loadCategories(); loadCategoriesIntoSelects(); loadRestockDemand(); }
   if(name==='tools')        loadTools();
-  if(name==='numnotice'&&window.nnLoad)nnLoad(); if(name==='otp2'&&window.scLoad)scLoad(); if(name==='websitesadm'){if(window.wsLoad)wsLoad();if(window.wrLoad)wrLoad();} if(name==='priceadj'&&window.kshPaLoad)kshPaLoad(); if(name==='vtuadm'&&window.vtuAdmLoad)vtuAdmLoad(); if(name==='boost2adm'&&window.slmB2Load)slmB2Load(); if(name==='tutorialsadm'&&window.slmTutLoad)slmTutLoad(); if(name==='tutlib'&&window.tlLoad)tlLoad();
+  if(name==='numnotice'&&window.nnLoad)nnLoad(); if(name==='pagenotices'&&window.pnLoad)pnLoad(); if(name==='otp2'&&window.scLoad)scLoad(); if(name==='websitesadm'){if(window.wsLoad)wsLoad();if(window.wrLoad)wrLoad();} if(name==='priceadj'&&window.kshPaLoad)kshPaLoad(); if(name==='vtuadm'&&window.vtuAdmLoad)vtuAdmLoad(); if(name==='giftdelivery'&&window.gdAdmLoad)gdAdmLoad(); if(name==='boost2adm'&&window.slmB2Load)slmB2Load(); if(name==='tutorialsadm'&&window.slmTutLoad)slmTutLoad(); if(name==='tutlib'&&window.tlLoad)tlLoad();
   if(name==='logs2') { m2LoadConfig(); m2LoadProducts(false); m2LoadBalance(); m2LoadOrders(); }
   if(name==='logs3')        { m3LoadConfig(); m3LoadProducts(false); m3LoadBalance(); m3LoadOrders(); }
   if(name==='logs4')        { m4LoadConfig(); m4LoadProducts(false); m4LoadBalance(); m4LoadOrders(); }
@@ -7772,5 +7776,7 @@ function ssExportCsv(){
 </script>
 <script src="/js/admin-stevo.js?v=3"></script>
 <script src="/js/admin-vtu.js?v=1"></script>
+<script src="/js/admin-gifts.js?v=3"></script>
+<script src="/js/admin-pagenotices.js?v=1"></script>
 </body>
 </html>
