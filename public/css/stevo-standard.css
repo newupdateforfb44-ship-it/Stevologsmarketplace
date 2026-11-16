@@ -1,0 +1,26 @@
+/* Stevelogsmarketplace — "standard" page layout, the same look as Gift Delivery.
+   Loaded LAST on Buy Number 1/2/3, Rentals, Temp Email and Airtime & Data so every page
+   has the same fonts, card style, spacing, inputs and picker buttons. */
+:root{--st-bg:#0a0b11;--st-card:#14171f;--st-card2:#1a1e29;--st-line:rgba(255,255,255,.08);--st-t1:#fff8e1;--st-t2:#bdb7a2;--st-gold:#f5b81c;--st-r:18px}
+html body{background:var(--st-bg);color:var(--st-t1);font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{padding-left:0!important;padding-right:0!important}
+html body .wrap{max-width:960px!important;margin:0 auto!important;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))!important}
+html body .wrap h1,html body .wrap h2{font-family:'Sora','Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;line-height:1.2}
+html body .wrap h1{font-size:clamp(24px,6vw,32px);margin:6px 0 8px}
+html body .wrap h2{font-size:20px}
+html body .wrap h3{font-family:'Sora','Plus Jakarta Sans',sans-serif;font-size:17px}
+html body .wrap > p,html body .wrap .muted{color:var(--st-t2)}
+/* cards */
+html body .wrap .panel,html body .wrap .card{background:var(--st-card)!important;border:1px solid var(--st-line)!important;border-radius:var(--st-r)!important;padding:16px!important;margin:0 0 14px!important;box-shadow:none}
+/* labels + fields */
+html body .wrap label{display:block;margin:12px 0 6px;font-size:13px;font-weight:700;color:var(--st-t2)}
+html body .wrap input:not([type=checkbox]):not([type=radio]),html body .wrap textarea,html body .wrap select{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--st-line);background:var(--st-card2);color:var(--st-t1);font:500 16px 'Plus Jakarta Sans',system-ui,sans-serif;outline:none;box-sizing:border-box}
+html body .wrap input:focus,html body .wrap textarea:focus{border-color:var(--st-gold)}
+/* picker buttons (the styled lists) match the fields */
+html body .wrap .ks-sheet-trigger{margin-top:0!important;min-height:52px;border:1px solid var(--st-line)!important;border-radius:12px!important;background:var(--st-card2)!important}
+html body .wrap .ks-sheet-trigger:hover,html body .wrap .ks-sheet-trigger:focus-visible{border-color:var(--st-gold)!important}
+/* main buttons */
+html body .wrap > .panel > button:not(.ks-sheet-trigger),html body .wrap .panel > button.btn,html body .wrap .panel button#buy,html body .wrap .panel button[id*=buy],html body .wrap .panel button[id*=Buy]{min-height:50px;border-radius:14px;font:800 16px 'Plus Jakarta Sans',sans-serif}
+html body .wrap .msg,html body .wrap .notice{border-radius:12px;font-size:14px;line-height:1.5}
+html body .wrap .order,html body .wrap .active-order{border-radius:var(--st-r)}
+@media(max-width:560px){html body .wrap{padding-left:14px!important;padding-right:14px!important}}

@@ -20,3 +20,7 @@
 .ks-sheet-subtitle{line-height:1.3;white-space:normal;overflow-wrap:anywhere}
 .ks-sheet-trigger{box-sizing:border-box;height:auto}
 .ks-sheet-chevron{flex:none}
+
+/* Option rows: long names wrap instead of being cut, price/stock sits on its own line */
+.ks-sheet-option .ks-sheet-title{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.ks-sheet-option .ks-option-detail{color:#f5b81c;font-weight:700}
