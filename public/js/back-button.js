@@ -7,9 +7,10 @@
   function mount() {
     if (document.getElementById('kslBackBar') || !document.body) return;
     var st = document.createElement('style');
-    st.textContent = '#kslBackBar{position:sticky;top:0;z-index:9990;display:flex;align-items:center;padding:8px 12px;background:var(--card,#fff);border-bottom:1px solid var(--border,rgba(0,0,0,.1))}' +
-      '#kslBackBar button{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #f5b81c;background:transparent;color:#f5b81c;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer}' +
-      '[data-theme="dark"] #kslBackBar{background:#12141c}';
+    st.textContent = '#kslBackBar{position:relative!important;top:auto!important;z-index:1!important;display:flex;align-items:center;padding:10px 14px 4px;background:transparent!important;border-bottom:0!important}' +
+      '#kslBackBar button{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid #f5b81c;background:transparent;color:#f5b81c;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer}' +
+      'html body .navbar{z-index:600!important}' +
+      '#slmMenuTrigger{position:relative;z-index:601}';
     document.head.appendChild(st);
     var bar = document.createElement('div');
     bar.id = 'kslBackBar';

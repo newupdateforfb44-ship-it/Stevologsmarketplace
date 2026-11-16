@@ -386,7 +386,7 @@
     if (window.__kslBackBar || window.__kslBackLoader2) return;
     window.__kslBackLoader2 = true;
     var sc = document.createElement('script');
-    sc.src = '/js/back-button.js?v=4';
+    sc.src = '/js/back-button.js?v=5';
     sc.defer = true;
     document.head.appendChild(sc);
   }
