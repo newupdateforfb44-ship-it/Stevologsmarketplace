@@ -1647,6 +1647,8 @@ require('./lib/page-notices').register(app, { mongoose, adminAuth });
 require('./lib/websites').register(app, { mongoose, anyAdminAuth, auth, sendAdminEmail });
 // Tutorial library (admin adds videos/pictures/descriptions, customers watch free) - see lib/tutorials.js
 require('./lib/tutorials').register(app, { mongoose, anyAdminAuth, uploadMw: depositTutorialUpload, fileUrl });
+// Extra deposit methods: Manual Payment (receipt upload + admin approval) and Paymonetra - see lib/extra-deposits.js
+require('./lib/extra-deposits').register(app, { mongoose, User, Transaction, auth, adminAuth, anyAdminAuth, cloudinary, cloudinaryConfigured, receiptDir, pushBalanceToUser, sendAdminEmail });
 
 // Owner-only integration diagnostics. This reports readiness without ever
 // returning provider credentials, so the admin can distinguish a disabled
