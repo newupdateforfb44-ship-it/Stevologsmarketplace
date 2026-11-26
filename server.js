@@ -307,7 +307,7 @@ const uploadLogFields = multer({
  const isTutorial = file.fieldname === 'tutorialImages' || file.fieldname === 'tutorialVideo' || file.fieldname === 'purchaseTutorialImages' || file.fieldname === 'purchaseTutorialVideo' || file.fieldname.startsWith('subTutorialFile_');
  return {
  folder: file.fieldname === 'deliverableFile' ? 'ksl/files' : isReview ? 'ksl/reviews' : isTutorial ? 'ksl/tutorials' : 'ksl/uploads',
- resource_type: (isReview || isTutorial) ? 'auto' : (file.fieldname === 'deliverableFile' ? 'auto' : 'image'),
+ resource_type: (isReview || isTutorial || file.fieldname === 'audioManual') ? 'auto' : (file.fieldname === 'deliverableFile' ? 'auto' : 'image'),
  public_id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
  use_filename: false
  };
@@ -333,10 +333,13 @@ const uploadLogFields = multer({
  if (file.fieldname === 'tutorialVideo' && !/mp4|mov|webm|quicktime/.test(file.mimetype)) return cb(new Error('Tutorial video must be a video file'));
  if (file.fieldname === 'purchaseTutorialImages' && !/jpeg|jpg|png|gif|webp/.test(file.mimetype)) return cb(new Error('Tutorial pictures must be image files'));
  if (file.fieldname === 'purchaseTutorialVideo' && !/mp4|mov|webm|quicktime/.test(file.mimetype)) return cb(new Error('Tutorial video must be a video file'));
+if (file.fieldname === 'workingPictures' && !/jpeg|jpg|png|gif|webp/.test(file.mimetype)) return cb(new Error('Working pictures must be image files'));
+if (file.fieldname === 'audioManual' && !/^audio\//.test(file.mimetype)) return cb(new Error('Audio manual must be an audio file'));
  cb(null, true);
  }
 }).fields([
  { name: 'picture', maxCount: 1 }, { name: 'deliverableFile', maxCount: 1 }, { name: 'adminReviewFile', maxCount: 1 },
+ { name: 'workingPictures', maxCount: 10 }, { name: 'audioManual', maxCount: 1 },
  { name: 'tutorialImages', maxCount: 20 }, { name: 'tutorialVideo', maxCount: 1 },
  { name: 'purchaseTutorialImages', maxCount: 20 }, { name: 'purchaseTutorialVideo', maxCount: 1 },
  ...subReviewFileFields, ...subTutorialFileFields
@@ -500,10 +503,13 @@ const userSchema = new mongoose.Schema({
  logType: { type: String, enum: ['log', 'tool'], default: 'log' },
  logDetails: String,
  toolLink: String,
- deliveryType: { type: String, enum: ['link', 'file'], default: 'link' },
+ deliveryType: { type: String, enum: ['link', 'file', 'email', 'video', 'image', 'none'], default: 'link' },
  deliverableFile: String,
  deliverableFileName: String,
  pricePaid: Number,
+ productMode: { type: String, default: 'product' },
+ postPurchaseMessage: { type: String, default: '' },
+ audioManual: { type: String, default: '' },
  purchaseTutorial: { tutorialType: { type: String, default: 'none' }, images: [{ type: String }], videoUrl: { type: String, default: '' }, linkUrl: { type: String, default: '' }, note: { type: String, default: '' } },
  source: { type: String, default: 'market1' }, // 'market1' manual logs · 'market2' RakibSocials API · 'market3' Sujan Department API
  purchasedAt: { type: Date, default: Date.now }
@@ -555,9 +561,13 @@ const logSchema = new mongoose.Schema({
  description: { type: String, required: true },
  details: String,
  toolLink: String,
- deliveryType: { type: String, enum: ['link', 'file'], default: 'link' },
+ deliveryType: { type: String, enum: ['link', 'file', 'email', 'video', 'image', 'none'], default: 'link' },
  deliverableFile: String,
  deliverableFileName: String,
+ productMode: { type: String, enum: ['product', 'tutorial_only'], default: 'product' },
+ postPurchaseMessage: { type: String, default: '', maxlength: 4000 },
+ workingPictures: [{ type: String }],
+ audioManual: { type: String, default: '' },
  toolQty: { type: Number, default: 0 },
  maxPurchases: { type: Number, default: 1 },
  picture: String,
@@ -2659,7 +2669,7 @@ app.get('/api/logs', optionalAuth, async (req, res) => {
  const filter = { available: true };
  if (req.query.type && req.query.type !== 'all') filter.type = req.query.type;
  if (req.query.category && req.query.category !== 'all') filter.category = req.query.category;
- const logs = await Log.find(filter).select('-details -toolLink -purchaseTutorial -deliverableFile -subAccounts.details -subAccounts.toolLink -subAccounts.deliverableFile').sort({ createdAt: -1 });
+ const logs = await Log.find(filter).select('-details -toolLink -purchaseTutorial -postPurchaseMessage -audioManual -deliverableFile -subAccounts.details -subAccounts.toolLink -subAccounts.deliverableFile').sort({ createdAt: -1 });
  const categories = await Category.find();
  const showReviewsFor = new Set(categories.filter(c => c.showReviews).map(c => c.name));
  const visible = await Promise.all(logs.map(async l => {
@@ -2690,7 +2700,7 @@ app.get('/api/logs/:id', optionalAuth, async (req, res) => {
  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
  res.set('Pragma', 'no-cache');
  res.set('Expires', '0');
- const log = await Log.findById(req.params.id).select('-details -toolLink -purchaseTutorial -deliverableFile -subAccounts.details -subAccounts.toolLink -subAccounts.deliverableFile');
+ const log = await Log.findById(req.params.id).select('-details -toolLink -purchaseTutorial -postPurchaseMessage -audioManual -deliverableFile -subAccounts.details -subAccounts.toolLink -subAccounts.deliverableFile');
  if (!log) return res.status(404).json({ error: 'Not found' });
  const cat = await Category.findOne({ name: log.category });
  const showReviews = !cat || cat.showReviews; // default to showing if category record doesn't exist yet
@@ -2823,10 +2833,7 @@ app.post('/api/logs/buy/:id', auth, async (req, res) => {
  const updatedUser = await User.findOneAndUpdate(
    { _id: user._id, balance: { $gte: log.price }, ...dedupe },
    { $inc: { balance: -log.price }, $push: { purchaseDetails: {
-   logId: log._id, logTitle: log.title, logType: log.type, logDetails: log.details || '',
-   toolLink: log.toolLink || '', deliveryType: log.deliveryType || 'link',
-   deliverableFile: log.deliverableFile || '', deliverableFileName: log.deliverableFileName || '',
-   pricePaid: log.price, purchasedAt: new Date(), purchaseTutorial: ptutForRecord(log)
+   logId: log._id, logTitle: log.title, logType: log.type, ...deliveryForRecord(log), pricePaid: log.price, purchasedAt: new Date(), purchaseTutorial: ptutForRecord(log)
  } } },
    { new: true }
  );
@@ -2836,6 +2843,7 @@ app.post('/api/logs/buy/:id', auth, async (req, res) => {
  }
  await Transaction.create({ userId: user._id, type: 'purchase', amount: log.price, description: `Purchased: ${log.title}`, status: 'success' });
  await creditReferralCommission(updatedUser, log.price, log.title);
+  if (log.productMode !== 'tutorial_only' && log.deliveryType === 'email' && updatedUser.email) sendDeliveryEmail(updatedUser, log, log.details || '');
  checkAndAwardBadges(user._id).catch(() => {});
 
  // ── Send purchase confirmation email ──────────────────────
@@ -2851,10 +2859,7 @@ app.post('/api/logs/buy/:id', auth, async (req, res) => {
 
  res.json({
    message: 'Purchase successful!', newBalance: updatedUser.balance,
-   logDetails: log.details || '', toolLink: log.toolLink || '',
-   deliveryType: log.deliveryType || 'link',
-   deliverableFile: log.deliverableFile || '', deliverableFileName: log.deliverableFileName || '',
-   logType: log.type, logTitle: log.title, purchaseTutorial: ptutForRecord(log) || null,
+   ...deliveryForRecord(log), logType: log.type, logTitle: log.title, purchaseTutorial: ptutForRecord(log) || null, purchasedAt: new Date(),
  });
  } catch (e) { res.status(500).json({ error: 'Purchase failed: ' + e.message }); }
 });
@@ -5168,10 +5173,7 @@ app.post('/api/v1/buy/:id', apiKeyAuth, async (req, res) => {
  { $inc: { soldCount: 1 } }, { new: true });
  if (!_claim) return res.status(400).json({ error: 'Sold out' });
  const _deb = await User.findOneAndUpdate({ _id: user._id, balance: { $gte: log.price } }, { $inc: { balance: -log.price }, $push: { purchaseDetails: {
- logId: log._id, logTitle: log.title, logType: log.type, logDetails: log.details || '',
- toolLink: log.toolLink || '', deliveryType: log.deliveryType || 'link',
- deliverableFile: log.deliverableFile || '', deliverableFileName: log.deliverableFileName || '',
- pricePaid: log.price, purchaseTutorial: ptutForRecord(log) } } }, { new: true });
+ logId: log._id, logTitle: log.title, logType: log.type, ...deliveryForRecord(log), pricePaid: log.price, purchaseTutorial: ptutForRecord(log) } } }, { new: true });
  if (!_deb) {
  await Log.updateOne({ _id: log._id }, { $inc: { soldCount: -1 } });
  return res.status(400).json({ error: `Insufficient balance — this item costs ₦${log.price}` });
@@ -5683,7 +5685,7 @@ app.get('/api/admin/inventory-breakdown', adminAuth, async (req, res) => {
  res.json(rows);
  } catch (e) { res.status(500).json({ error: 'Failed to load breakdown: ' + e.message }); }
 });
-app.get('/api/admin/logs', adminAuth, async (req, res) => {
+app.get('/api/admin/logs', anyAdminAuth, async (req, res) => {
  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
  res.set('Pragma', 'no-cache');
  res.set('Expires', '0');
@@ -5768,6 +5770,41 @@ function ptutForRecord(log) {
   if (!t || !t.tutorialType || t.tutorialType === 'none') return undefined;
   return { tutorialType: t.tutorialType, images: Array.from(t.images || []), videoUrl: t.videoUrl || '', linkUrl: t.linkUrl || '', note: t.note || '' };
 }
+// ── Product delivery (tools): what a buyer receives after purchase ──────────
+function normDeliveryType(v) {
+  const t = String(v || '');
+  return ['link', 'file', 'email', 'video', 'image'].includes(t) ? t : 'link';
+}
+// Tutorial-only items deliver nothing: the buyer gets the tutorial and the message only.
+function deliveryForRecord(log) {
+  const productMode = log.productMode === 'tutorial_only' ? 'tutorial_only' : 'product';
+  const postPurchaseMessage = log.postPurchaseMessage || '';
+  if (productMode === 'tutorial_only') {
+    return { productMode, postPurchaseMessage, audioManual: log.audioManual || '', deliveryType: 'none', logDetails: '', toolLink: '', deliverableFile: '', deliverableFileName: '' };
+  }
+  return {
+    productMode, postPurchaseMessage, audioManual: log.audioManual || '', deliveryType: log.deliveryType || 'link',
+    logDetails: log.details || '', toolLink: log.toolLink || '',
+    deliverableFile: log.deliverableFile || '', deliverableFileName: log.deliverableFileName || ''
+  };
+}
+// Emails the delivered text to the buyer. A failed email never blocks the purchase;
+// the same text is always kept in the buyer's purchase history.
+async function sendDeliveryEmail(user, log, text) {
+  try {
+    const { sendMail } = require('./lib/mailer');
+    const e = (x) => String(x || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    await sendMail({
+      to: user.email, category: 'delivery', userId: user._id,
+      subject: `Your ${log.title} delivery | Stevelogsmarketplace`,
+      content: {
+        title: 'Your purchase has been delivered',
+        preheader: `Your ${log.title} details are inside.`,
+        lines: [`<b>Item:</b> ${e(log.title)}`, `<b>Delivery:</b><br>${e(text).replace(/\n/g, '<br>')}`]
+      }
+    });
+  } catch (err) { console.error('[delivery-email]', err.message); }
+}
 // Returns null (nothing sent), { value } to save, or { error } to reject.
 function readPurchaseTutorial(req, existing) {
   const b = req.body || {};
@@ -5795,7 +5832,7 @@ function readPurchaseTutorial(req, existing) {
   }
   return { error: 'Unknown tutorial type' };
 }
-app.post('/api/admin/logs', adminAuth, uploadLogFields, async (req, res) => {
+app.post('/api/admin/logs', anyAdminAuth, uploadLogFields, async (req, res) => {
  try {
  const { title, description, details, toolLink, toolQty, maxPurchases, price, category, type, deliveryType, listingType, subAccounts, adminReviewType, adminReviewContent, adminReviewRating, tutorialType, tutorialLinkUrl } = req.body;
  const isFolder = listingType === 'folder';
@@ -5827,10 +5864,19 @@ app.post('/api/admin/logs', adminAuth, uploadLogFields, async (req, res) => {
  else if (adminReviewType === 'text' || adminReviewType === 'link') adminReview.content = adminReviewContent || '';
  if (adminReviewRating) adminReview.rating = parseInt(adminReviewRating);
  }
- const finalDeliveryType = deliveryType === 'file' ? 'file' : 'link';
+ const productMode = (type === 'tool' && req.body.productMode === 'tutorial_only') ? 'tutorial_only' : 'product';
+ const postPurchaseMessage = String(req.body.postPurchaseMessage || '').trim().slice(0, 4000);
+ const finalDeliveryType = productMode === 'tutorial_only' ? 'none' : normDeliveryType(deliveryType);
  if (!isFolder && type === 'tool') {
- if (finalDeliveryType === 'file' && !deliverableFile) return res.status(400).json({ error: 'Please upload the deliverable file' });
- if (finalDeliveryType === 'link' && !toolLink) return res.status(400).json({ error: 'Tool link is required' });
+   if (productMode === 'tutorial_only') {
+     if (!postPurchaseMessage && tutorial.tutorialType === 'none' && !(ptut && ptut.value)) return res.status(400).json({ error: 'A tutorial-only item needs a tutorial or a message to show after purchase' });
+   } else {
+     if (finalDeliveryType === 'link' && !toolLink) return res.status(400).json({ error: 'Tool link is required' });
+     if (['file', 'video', 'image'].includes(finalDeliveryType) && !deliverableFile) return res.status(400).json({ error: 'Please upload the file to deliver' });
+     if (finalDeliveryType === 'video' && deliverableFile && !/^video\//.test(deliverableFile.mimetype)) return res.status(400).json({ error: 'The delivered video must be a video file' });
+     if (finalDeliveryType === 'image' && deliverableFile && !/^image\//.test(deliverableFile.mimetype)) return res.status(400).json({ error: 'The delivered picture must be an image file' });
+     if (finalDeliveryType === 'email' && !String(details || '').trim()) return res.status(400).json({ error: 'Write the email content in the Details box' });
+   }
  }
  let parsedSubAccounts = [];
  if (isFolder) {
@@ -5875,7 +5921,9 @@ app.post('/api/admin/logs', adminAuth, uploadLogFields, async (req, res) => {
  price: isFolder ? undefined : parseFloat(price),
  subAccounts: isFolder ? parsedSubAccounts : [],
  category: category || 'General', picture,
- adminReview, tutorial,
+ adminReview, tutorial, productMode, postPurchaseMessage,
+ workingPictures: (req.files?.workingPictures || []).map(fileUrl),
+ audioManual: req.files?.audioManual?.[0] ? fileUrl(req.files.audioManual[0]) : '',
  ...(ptut && ptut.value ? { purchaseTutorial: ptut.value } : {})
  });
  try {
@@ -5887,7 +5935,7 @@ app.post('/api/admin/logs', adminAuth, uploadLogFields, async (req, res) => {
  res.json(log);
  } catch (e) { res.status(500).json({ error: 'Failed: ' + e.message }); }
 });
-app.put('/api/admin/logs/:id', adminAuth, uploadLogFields, async (req, res) => {
+app.put('/api/admin/logs/:id', anyAdminAuth, uploadLogFields, async (req, res) => {
  try {
  const { title, description, details, toolLink, toolQty, maxPurchases, price, category, type, available, deliveryType, subAccounts, adminReviewType, adminReviewContent, adminReviewRating, clearAdminReview, tutorialType, tutorialLinkUrl, clearTutorial } = req.body;
  const existing = await Log.findById(req.params.id);
@@ -5935,7 +5983,16 @@ app.put('/api/admin/logs/:id', adminAuth, uploadLogFields, async (req, res) => {
  if (blank) return res.status(400).json({ error: `"${blank.label}" has no login details. Paste its credentials in the Details box before saving.` });
  } catch { return res.status(400).json({ error: 'Invalid sub-accounts data' }); }
  }
- if (deliveryType) update.deliveryType = deliveryType === 'file' ? 'file' : 'link';
+ if (req.body.productMode !== undefined) update.productMode = req.body.productMode === 'tutorial_only' ? 'tutorial_only' : 'product';
+ if (req.body.postPurchaseMessage !== undefined) update.postPurchaseMessage = String(req.body.postPurchaseMessage || '').trim().slice(0, 4000);
+ const _pmode = update.productMode || existing.productMode || 'product';
+ if (deliveryType) update.deliveryType = _pmode === 'tutorial_only' ? 'none' : normDeliveryType(deliveryType);
+ if (existing.type === 'tool' && _pmode === 'product') {
+   const _dt = update.deliveryType || existing.deliveryType;
+   const _hasFile = !!(req.files?.deliverableFile?.[0] || existing.deliverableFile);
+   if (['file', 'video', 'image'].includes(_dt) && !_hasFile) return res.status(400).json({ error: 'Please upload the file to deliver' });
+   if (_dt === 'email' && !String(update.details ?? existing.details ?? '').trim()) return res.status(400).json({ error: 'Write the email content in the Details box' });
+ }
  const picFile = req.files?.picture?.[0];
  const deliverableFile = req.files?.deliverableFile?.[0];
  const reviewFile = req.files?.adminReviewFile?.[0];
@@ -5970,13 +6027,19 @@ app.put('/api/admin/logs/:id', adminAuth, uploadLogFields, async (req, res) => {
  if (pt && pt.error) return res.status(400).json({ error: pt.error });
  if (pt && pt.value) update.purchaseTutorial = pt.value;
  }
+ if (req.files?.workingPictures?.length) update.workingPictures = [...(existing.workingPictures || []), ...req.files.workingPictures.map(fileUrl)];
+ if (String(req.body.clearWorkingPictures) === 'true') update.workingPictures = [];
+ if (req.files?.audioManual?.[0]) update.audioManual = fileUrl(req.files.audioManual[0]);
+ if (String(req.body.clearAudioManual) === 'true') update.audioManual = '';
+ // Support staff may add and edit product content, but not price, stock, visibility or type.
+ if (req.adminRole !== 'super') ['price', 'toolQty', 'maxPurchases', 'available', 'type', 'soldCount'].forEach(k => { delete update[k]; });
  const log = await Log.findByIdAndUpdate(req.params.id, update, { new: true });
  if (!log) return res.status(404).json({ error: 'Not found' });
  res.json(log);
  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.delete('/api/admin/logs/:id', adminAuth, async (req, res) => { await Log.findByIdAndDelete(req.params.id); res.json({ message: 'Deleted' }); });
-app.delete('/api/admin/logs/:id/tutorial', adminAuth, async (req, res) => {
+app.delete('/api/admin/logs/:id/tutorial', anyAdminAuth, async (req, res) => {
  const log = await Log.findByIdAndUpdate(
  req.params.id,
  { tutorial: { tutorialType: 'none', images: [], videoUrl: '', linkUrl: '' } },
