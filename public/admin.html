@@ -153,6 +153,7 @@ tr:hover td{background:rgba(255,255,255,.035)}
 .btn-edit:hover{background:rgba(255,224,138,.2)}
 .btn-del{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2);color:var(--red);padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn-del:hover{background:rgba(255,71,87,.2)}
+.staff-mode .staff-hide{display:none!important}
 .btn-cred{background:rgba(0,212,106,.1);border:1px solid rgba(0,212,106,.2);color:var(--green);padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn-cred:hover{background:rgba(0,212,106,.2)}
 .btn-copy{background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.25);color:var(--gold);padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -934,23 +935,28 @@ tr:hover td{background:rgba(255,255,255,.035)}
         <div class="fg"><label>Description (public — what buyers see before buying)</label>
           <textarea id="tDesc" rows="2" placeholder="What does this tool do? Features, benefits..."></textarea>
         </div>
-        <div class="fg"><label>Delivery Method *</label>
+        <div class="fg"><label>Product type *</label><select id="tProductMode" onchange="toggleToolProductMode()"><option value="product">Product: something is delivered after purchase</option><option value="tutorial_only">Tutorial only: nothing is delivered, the buyer just gets the information</option></select></div>
+<div id="tDeliveryWrap"><div class="fg"><label>Delivery Method *</label>
           <select id="tDeliveryType" onchange="toggleToolDeliveryFields()">
  <option value="link"><svg class="icon i-link" aria-hidden="true"><use href="#i-link"/></svg> Link (hidden until purchase)</option>
  <option value="file"><svg class="icon i-folder" aria-hidden="true"><use href="#i-folder"/></svg> File Upload (buyer downloads after purchase)</option>
+<option value="video">Video (buyer watches after purchase)</option><option value="image">Picture (buyer views after purchase)</option><option value="email">Email (sent to the buyer's email)</option>
           </select>
         </div>
  <div id="tLinkWrap" class="fg"><label><svg class="icon i-lock" aria-hidden="true"><use href="#i-lock"/></svg> Tool Link * (hidden — only revealed after purchase)</label>
           <input type="url" id="tLink" placeholder="https://..."/>
         </div>
- <div id="tFileWrap" class="fg" style="display:none"><label><svg class="icon i-lock" aria-hidden="true"><use href="#i-lock"/></svg> Deliverable File * (buyer can download after purchase)</label>
+ <div id="tFileWrap" class="fg" style="display:none"><label><svg class="icon i-lock" aria-hidden="true"><use href="#i-lock"/></svg> <span id="tFileLabel">Deliverable File *</span> (buyer gets this after purchase)</label>
           <input type="file" id="tDeliverableFile"/>
         </div>
+<div id="tEmailWrap" class="fg" style="display:none"><label>Email content (emailed to the buyer and kept in their purchase history) *</label><textarea id="tEmailText" rows="4" placeholder="Write what the buyer should receive"></textarea></div>
+</div>
         <div class="form-row">
           <div class="fg"><label>Price (₦) *</label><input type="number" id="tPrice" placeholder="e.g. 1500" min="1"/></div>
-          <div class="fg"><label>Available Quantity (0 = unlimited)</label><input type="number" id="tQty" placeholder="0" value="0" min="0"/></div>
+          <div class="fg"><label>Available Quantity (how many people can buy)</label><select id="tQtyPreset" onchange="applyQtyPreset('t')"><option value="0">Unlimited</option><option value="1">1 person only (then out of stock)</option><option value="500">500 people</option><option value="custom">Custom (type a number below)</option></select><input type="number" id="tQty" placeholder="0" value="0" min="0" style="margin-top:6px"/></div>
         </div>
         <div class="fg"><label>Picture (optional)</label><input type="file" id="tPic" accept="image/*"/></div><div class="info-box purple"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Optional: a tutorial that <strong>only buyers can see</strong>. It is not shown on the product page — it appears after purchase and stays in their purchase history.</div>
+<div class="fg"><label>Message shown after purchase (optional)</label><textarea id="tPostMsg" rows="3" placeholder="Shown to the buyer right after purchase and kept in their purchase history"></textarea></div>
 <div class="fg"><label>Tutorial after purchase (hidden from customers until they buy)</label>
   <select id="tPTutType" onchange="togglePTutFields('t')">
     <option value="none">None</option>
@@ -2735,12 +2741,15 @@ tr:hover td{background:rgba(255,255,255,.035)}
       </div>
     </div>
     <div class="fg"><label>Description</label><textarea id="eDesc" rows="2"></textarea></div>
+<div class="fg"><label>Working pictures (proof it works, shown on the product page; optional)</label><div id="eWorkingCur" style="font-size:12px;color:var(--t2);margin-bottom:6px"></div><input type="file" id="eWorkingPics" accept="image/*" multiple/><label style="display:flex;gap:6px;align-items:center;margin-top:6px;font-size:12px"><input type="checkbox" id="eClearWorking"/> Remove all current working pictures</label></div>
+<div class="fg"><label>Audio manual (buyers listen to it after purchase; optional)</label><div id="eAudioCur" style="font-size:12px;color:var(--t2);margin-bottom:6px"></div><input type="file" id="eAudioManual" accept="audio/*"/><label style="display:flex;gap:6px;align-items:center;margin-top:6px;font-size:12px"><input type="checkbox" id="eClearAudio"/> Remove current audio manual</label></div>
     <div id="eSimpleWrap">
  <div id="eDetailsWrap" class="fg"><label><svg class="icon i-lock" aria-hidden="true"><use href="#i-lock"/></svg> Log Details (private)</label><textarea id="eDetails" rows="3"></textarea><button type="button" class="btn-copy" style="margin-top:6px" onclick="copyRaw(document.getElementById('eDetails').value,this)"><svg class="icon i-clipboard" aria-hidden="true"><use href="#i-clipboard"/></svg> Copy</button></div>
-      <div id="eDeliveryTypeWrap" class="fg" style="display:none"><label>Delivery Method</label>
+      <div id="eProductModeWrap" class="fg" style="display:none"><label>Product type</label><select id="eProductMode" onchange="toggleEditDeliveryFields(true)"><option value="product">Product: something is delivered after purchase</option><option value="tutorial_only">Tutorial only: nothing is delivered</option></select></div>
+<div id="eDeliveryTypeWrap" class="fg" style="display:none"><label>Delivery Method</label>
         <select id="eDeliveryType" onchange="toggleEditDeliveryFields()">
  <option value="link"><svg class="icon i-link" aria-hidden="true"><use href="#i-link"/></svg> Link</option>
- <option value="file"><svg class="icon i-folder" aria-hidden="true"><use href="#i-folder"/></svg> File Upload</option>
+ <option value="file"><svg class="icon i-folder" aria-hidden="true"><use href="#i-folder"/></svg> File Upload</option><option value="video">Video</option><option value="image">Picture</option><option value="email">Email (the Log Details text is emailed to the buyer)</option>
         </select>
       </div>
  <div id="eLinkWrap" class="fg" style="display:none"><label><svg class="icon i-lock" aria-hidden="true"><use href="#i-lock"/></svg> Tool Link (hidden until purchase)</label><input type="url" id="eLink"/></div>
@@ -2750,7 +2759,7 @@ tr:hover td{background:rgba(255,255,255,.035)}
       </div>
       <div class="form-row">
         <div id="eMaxWrap" class="fg"><label>Max Purchases</label><input type="number" id="eMax" min="1"/></div>
-        <div id="eQtyWrap" class="fg" style="display:none"><label>Quantity (0=unlimited)</label><input type="number" id="eQty" min="0"/></div>
+        <div id="eQtyWrap" class="fg" style="display:none"><label>Quantity (how many people can buy)</label><select id="eQtyPreset" onchange="applyQtyPreset('e')"><option value="0">Unlimited</option><option value="1">1 person only (then out of stock)</option><option value="500">500 people</option><option value="custom">Custom (type a number below)</option></select><input type="number" id="eQty" min="0" style="margin-top:6px"/></div>
       </div>
       <div id="ePriceWrap" class="fg"><label>Price (₦)</label><input type="number" id="ePrice"/></div>
     </div>
@@ -2791,6 +2800,7 @@ tr:hover td{background:rgba(255,255,255,.035)}
  <button type="button" id="eDeleteTutorialBtn" class="btn-del" style="display:none" onclick="deleteTutorialNow()"><svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Delete Tutorial Now</button>
 <div id="ePTutWrap" style="display:none">
 <div class="info-box purple"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Tutorial for buyers only: hidden on the product page and shown after purchase (kept in their purchase history). Set to None to remove it.</div>
+<div class="fg"><label>Message shown after purchase (optional)</label><textarea id="ePostMsg" rows="3"></textarea></div>
 <div class="fg"><label>Tutorial after purchase (hidden from customers until they buy)</label>
   <select id="ePTutType" onchange="togglePTutFields('e')">
     <option value="none">None</option>
@@ -2937,6 +2947,7 @@ function applyRoleUI() {
   const isStaff = currentRole==='staff';
   badge.textContent = isStaff ? 'SUPPORT STAFF' : 'OWNER';
   badge.classList.toggle('staff', isStaff);
+  document.body.classList.toggle('staff-mode', isStaff);
   renderAdminNav();
   // Hide owner-only nav items for staff role
   document.querySelectorAll('.owner-only').forEach(el => { el.style.display = isStaff ? 'none' : ''; });
@@ -2992,9 +3003,9 @@ const ADMIN_NAV = [
   { group:'Boost', items:[
     { tab:'boost', icon:'i-rocket', label:'Boost settings & profit', accent:'accent' },
   ]},
-  { group:'Catalogue', owner:true, items:[
-    { tab:'logs',   icon:'i-package', label:'Logs',   owner:true },
-    { tab:'tools',  icon:'i-wrench',  label:'Tools',  owner:true },
+  { group:'Catalogue', items:[
+    { tab:'logs',   icon:'i-package', label:'Logs' },
+    { tab:'tools',  icon:'i-wrench',  label:'Tools' },
     { tab:'badges', icon:'i-medal',   label:'Badges', owner:true },
   ]},
   { group:'Users & wallet', owner:true, items:[
@@ -3939,7 +3950,7 @@ async function loadLogs() {
           </div>
           <div class="item-card-actions">
             <button class="btn-edit" onclick='openEdit(${safeJSON(l)})'><svg class="icon i-edit" aria-hidden="true"><use href="#i-edit"/></svg> Edit</button>
-            <button class="btn-del" onclick="delItem('${l._id}')"><svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Delete</button>
+            <button class="btn-del staff-hide" onclick="delItem('${l._id}')"><svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Delete</button>
           </div>
         </div>
       </div>`;
@@ -4423,8 +4434,8 @@ async function loadTools() {
     document.getElementById('toolsCount').textContent=tools.length;
     if(!tools.length){list.innerHTML='<div class="item-card-loading" style="color:var(--t2)">No tools added yet</div>';return;}
     list.innerHTML=tools.map(t=>{
-      const isFile=t.deliveryType==='file';
-      const deliveryCell=isFile
+      const isFile=['file','video','image'].includes(t.deliveryType);
+      const deliveryCell=t.productMode==='tutorial_only'?'<div class="link-cell"><span class="badge b-purple">Tutorial only</span></div>':t.deliveryType==='email'?'<div class="link-cell"><span class="badge b-blue">Email</span></div>':isFile
         ? `<div class="link-cell"><span class="badge b-purple"><svg class="icon i-folder" aria-hidden="true"><use href="#i-folder"/></svg> File</span><span class="link-text" title="${esc(t.deliverableFileName||'')}">${esc((t.deliverableFileName||'No file').substring(0,22))}</span></div>`
         : `<div class="link-cell">
             <span class="badge b-blue"><svg class="icon i-link" aria-hidden="true"><use href="#i-link"/></svg> Link</span>
@@ -4444,7 +4455,7 @@ async function loadTools() {
           </div>
           <div class="item-card-actions">
             <button class="btn-edit" onclick='openEdit(${safeJSON(t)})'><svg class="icon i-edit" aria-hidden="true"><use href="#i-edit"/></svg> Edit</button>
-            <button class="btn-del" onclick="delItem('${t._id}')"><svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Delete</button>
+            <button class="btn-del staff-hide" onclick="delItem('${t._id}')"><svg class="icon i-trash" aria-hidden="true"><use href="#i-trash"/></svg> Delete</button>
           </div>
         </div>
       </div>`;
@@ -4453,27 +4464,48 @@ async function loadTools() {
 }
 
 
+function applyQtyPreset(p) {
+  const v = document.getElementById(p+'QtyPreset').value;
+  if (v !== 'custom') document.getElementById(p+'Qty').value = v;
+}
+function syncQtyPreset(p, qty) {
+  const v = String(qty || 0);
+  document.getElementById(p+'QtyPreset').value = ['0','1','500'].includes(v) ? v : 'custom';
+}
+function toggleToolProductMode() {
+  const tut = document.getElementById('tProductMode').value === 'tutorial_only';
+  document.getElementById('tDeliveryWrap').style.display = tut ? 'none' : 'block';
+  if (!tut) toggleToolDeliveryFields();
+}
 function toggleToolDeliveryFields() {
-  const isFile=document.getElementById('tDeliveryType').value==='file';
-  document.getElementById('tLinkWrap').style.display=isFile?'none':'block';
-  document.getElementById('tFileWrap').style.display=isFile?'block':'none';
+  const dt = document.getElementById('tDeliveryType').value;
+  document.getElementById('tLinkWrap').style.display = dt === 'link' ? 'block' : 'none';
+  document.getElementById('tFileWrap').style.display = (dt === 'file' || dt === 'video' || dt === 'image') ? 'block' : 'none';
+  document.getElementById('tEmailWrap').style.display = dt === 'email' ? 'block' : 'none';
+  document.getElementById('tDeliverableFile').accept = dt === 'video' ? 'video/*' : dt === 'image' ? 'image/*' : '';
+  document.getElementById('tFileLabel').textContent = dt === 'video' ? 'Video *' : dt === 'image' ? 'Picture *' : 'Deliverable File *';
 }
 async function addTool() {
   const fb=document.getElementById('addToolFb');
   const title=gv('tTitle'),desc=gv('tDesc'),link=gv('tLink'),price=gv('tPrice');
   const qty=gv('tQty')||'0',cat=document.getElementById('tCat').value;
   const pic=document.getElementById('tPic').files[0];
-  const deliveryType=document.getElementById('tDeliveryType').value;
+  const productMode=document.getElementById('tProductMode').value;
+  const deliveryType=productMode==='tutorial_only'?'none':document.getElementById('tDeliveryType').value;
+  const emailText=gv('tEmailText');
   const deliverableFile=document.getElementById('tDeliverableFile').files[0];
   if(!title||!price) return setFb(fb,'Title and price are required','err');
   if(deliveryType==='link' && !link) return setFb(fb,'Tool link is required','err');
-  if(deliveryType==='file' && !deliverableFile) return setFb(fb,'Please upload the deliverable file','err');
+  if((deliveryType==='file'||deliveryType==='video'||deliveryType==='image') && !deliverableFile) return setFb(fb,'Please upload the file to deliver','err');
+  if(deliveryType==='email' && !emailText.trim()) return setFb(fb,'Write the email content','err');
   const fd=new FormData();
   fd.append('type','tool');fd.append('title',title);fd.append('description',desc);
   fd.append('toolLink',link);fd.append('toolQty',qty);fd.append('maxPurchases','0');
   fd.append('price',price);fd.append('category',cat);fd.append('deliveryType',deliveryType);
   if(pic) fd.append('picture',pic);
   if(deliverableFile) fd.append('deliverableFile',deliverableFile);
+  fd.append('productMode',productMode);fd.append('postPurchaseMessage',gv('tPostMsg'));
+  if(deliveryType==='email') fd.append('details',emailText);
   const ptutErr = appendPTut(fd, 't', true);
   if (ptutErr) return setFb(fb, ptutErr, 'err');
   const pbar1609 = progressBarFor(fb);
@@ -4485,9 +4517,14 @@ async function addTool() {
  setFb(fb,' Tool added! '+(deliveryType==='file'?'File is hidden from buyers until purchase.':'Link is hidden from buyers until purchase.'),'ok');
     ['tTitle','tDesc','tLink','tPrice','tQty'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('tQty').value='0';
+    document.getElementById('tQtyPreset').value='0';
     document.getElementById('tPic').value='';
     document.getElementById('tDeliverableFile').value='';
     document.getElementById('tDeliveryType').value='link';
+    document.getElementById('tProductMode').value='product';
+    document.getElementById('tPostMsg').value='';
+    document.getElementById('tEmailText').value='';
+    toggleToolProductMode();
     document.getElementById('tPTutType').value='none';
     ['tPTutImages','tPTutVideo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
     ['tPTutLink','tPTutNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -4508,7 +4545,15 @@ function openEdit(item) {
   document.getElementById('eDesc').value=item.description||'';
   document.getElementById('eDetails').value=item.details||'';
   document.getElementById('eLink').value=item.toolLink||'';
-  document.getElementById('eDeliveryType').value=item.deliveryType||'link';
+  document.getElementById('eDeliveryType').value=(item.deliveryType&&item.deliveryType!=='none')?item.deliveryType:'link';
+  document.getElementById('eProductMode').value=item.productMode==='tutorial_only'?'tutorial_only':'product';
+  document.getElementById('ePostMsg').value=item.postPurchaseMessage||'';
+  syncQtyPreset('e', item.toolQty);
+  document.getElementById('eWorkingCur').textContent = (item.workingPictures||[]).length ? (item.workingPictures.length+' picture(s) shown now. Choose new ones to add more.') : 'No working pictures yet.';
+  document.getElementById('eClearWorking').checked = false;
+  document.getElementById('eAudioCur').textContent = item.audioManual ? 'An audio manual is set. Choose a new file to replace it.' : 'No audio manual yet.';
+  document.getElementById('eClearAudio').checked = false;
+  ['ePrice','eQty','eQtyPreset','eMax','eAvail'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled = currentRole==='staff'; });
   document.getElementById('eCurrentFileName').textContent=item.deliverableFileName?`(current: ${item.deliverableFileName})`:'';
   document.getElementById('eMax').value=item.maxPurchases||1;
   document.getElementById('eQty').value=item.toolQty||0;
@@ -4735,14 +4780,18 @@ function collectEditSubAccountTutorialFiles() {
 }
 function toggleEditDeliveryFields(isTool) {
   const tool = isTool!==undefined ? isTool : document.getElementById('eType').value==='tool';
+  document.getElementById('eProductModeWrap').style.display = tool ? 'block' : 'none';
   if (!tool) {
     document.getElementById('eLinkWrap').style.display='none';
     document.getElementById('eFileWrap').style.display='none';
     return;
   }
-  const isFile=document.getElementById('eDeliveryType').value==='file';
-  document.getElementById('eLinkWrap').style.display=isFile?'none':'block';
-  document.getElementById('eFileWrap').style.display=isFile?'block':'none';
+  const tut = document.getElementById('eProductMode').value==='tutorial_only';
+  const dt = document.getElementById('eDeliveryType').value;
+  document.getElementById('eDeliveryTypeWrap').style.display = tut ? 'none' : 'block';
+  document.getElementById('eLinkWrap').style.display = (!tut && dt==='link') ? 'block' : 'none';
+  document.getElementById('eFileWrap').style.display = (!tut && (dt==='file'||dt==='video'||dt==='image')) ? 'block' : 'none';
+  document.getElementById('eDeliverableFile').accept = dt==='video' ? 'video/*' : dt==='image' ? 'image/*' : '';
 }
 function closeEdit(){ document.getElementById('editModal').classList.remove('open'); }
 async function saveEdit() {
@@ -4789,6 +4838,11 @@ async function saveEdit() {
     fd.append('maxPurchases',document.getElementById('eMax').value||'1');
     fd.append('price',document.getElementById('ePrice').value);
   }
+  Array.from(document.getElementById('eWorkingPics').files).forEach(f=>fd.append('workingPictures',f));
+  if (document.getElementById('eClearWorking').checked) fd.append('clearWorkingPictures','true');
+  const af=document.getElementById('eAudioManual').files[0];
+  if (af) fd.append('audioManual', af);
+  if (document.getElementById('eClearAudio').checked) fd.append('clearAudioManual','true');
   const pic=document.getElementById('ePic').files[0];
   if(pic) fd.append('picture',pic);
   const delivFile=document.getElementById('eDeliverableFile').files[0];
@@ -4828,6 +4882,8 @@ async function saveEdit() {
     }
   }
   if (document.getElementById('eType').value === 'tool') {
+    fd.append('productMode', document.getElementById('eProductMode').value);
+    fd.append('postPurchaseMessage', document.getElementById('ePostMsg').value);
     const ptutErr = appendPTut(fd, 'e', false);
     if (ptutErr) return setFb(fb, ptutErr, 'err');
   }
