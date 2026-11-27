@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Updates — Stevelogsmarketplace</title>
+  <meta name="description" content="Updates: products, tutorials and audio manuals on Stevelogsmarketplace."/>
+  <style>
+    :root { --bg:#0b0f1a; --card:#141b2d; --bd:#24304a; --t1:#f5f7fb; --t2:#9aa6c0; --gold:#f5b82e; --red:#ff4757; --green:#2ecc71; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--t1); }
+    .wrap { max-width:720px; margin:0 auto; padding:16px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+    .top a { color:var(--gold); text-decoration:none; font-weight:600; }
+    h1 { font-size:22px; margin:0; }
+    h2 { font-size:17px; margin:24px 0 10px; }
+    .grid { display:grid; grid-template-columns:1fr; gap:12px; }
+    .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; overflow:hidden; cursor:pointer; }
+    .card img.pic { width:100%; height:180px; object-fit:cover; display:block; background:#0e1424; }
+    .card .body { padding:14px; }
+    .card .ttl { font-weight:700; font-size:16px; }
+    .card .desc { color:var(--t2); font-size:13px; margin-top:4px; line-height:1.4; }
+    .row { display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px; flex-wrap:wrap; }
+    .price { color:var(--gold); font-weight:800; font-size:17px; }
+    .stock { font-size:12px; color:var(--t2); }
+    .soldout { color:var(--red); font-weight:700; font-size:12px; }
+    .btn { background:var(--gold); color:#1a1200; border:0; border-radius:10px; padding:12px 16px; font-weight:800; font-size:15px; cursor:pointer; width:100%; }
+    .btn[disabled] { opacity:.5; cursor:not-allowed; }
+    .btn-sec { background:transparent; color:var(--t2); border:1px solid var(--bd); border-radius:10px; padding:10px 14px; cursor:pointer; font-size:14px; }
+    .box { background:#0e1424; border:1px solid var(--bd); border-radius:12px; padding:12px; margin-top:12px; }
+    .box .lbl { font-size:12px; color:var(--t2); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
+    .box pre { white-space:pre-wrap; word-break:break-all; margin:0; font-family:ui-monospace,Menlo,monospace; font-size:13px; }
+    .box a.lnk { color:var(--gold); word-break:break-all; }
+    .gal { display:flex; gap:8px; overflow-x:auto; }
+    .gal img { width:120px; height:120px; object-fit:cover; border-radius:8px; flex:0 0 auto; cursor:pointer; }
+    .msg { white-space:pre-wrap; font-size:14px; line-height:1.5; }
+    .empty { color:var(--t2); font-size:14px; padding:14px 0; }
+    .err { color:var(--red); font-size:14px; margin-top:8px; }
+    .ok { color:var(--green); font-size:14px; margin-top:8px; }
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; z-index:50; }
+    .overlay.open { display:flex; }
+    .sheet { background:var(--card); border:1px solid var(--bd); border-radius:16px; width:100%; max-width:560px; padding:16px; margin-top:20px; }
+    .sheet img.big { width:100%; border-radius:12px; margin-bottom:12px; }
+    .x { float:right; background:none; border:0; color:var(--t2); font-size:24px; cursor:pointer; line-height:1; }
+    details { background:var(--card); border:1px solid var(--bd); border-radius:12px; padding:12px; margin-bottom:10px; }
+    summary { cursor:pointer; font-weight:700; }
+    audio { width:100%; margin-top:6px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a href="/dashboard">&larr; Back</a>
+    <h1>Updates</h1>
+    <span></span>
+  </div>
+  <div id="list" class="grid"><div class="empty">Loading…</div></div>
+
+  <h2>My update purchases</h2>
+  <div id="history"><div class="empty">Log in to see your purchases.</div></div>
+</div>
+
+<div id="overlay" class="overlay" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script src="/updates.js?v=1"></script>
+</body>
+</html>

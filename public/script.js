@@ -1860,13 +1860,12 @@ async function openModal(id) {
         ${(currentUser?.balance||0)<item.price?` — <a href="#" onclick="closeModal();showPage('deposit')" style="color:var(--gold)">Deposit funds</a>`:''}
       </div>`;
     }
-    const galHtml = (item.workingPictures||[]).length ? `<div style="margin:12px 0"><div style="font-size:13px;color:var(--t2);margin-bottom:6px">Working proof</div><div style="display:flex;gap:8px;overflow-x:auto">${item.workingPictures.map(u=>`<img src="${esc(u)}" alt="" loading="lazy" onclick="window.open(this.src)" style="width:120px;height:120px;object-fit:cover;border-radius:8px;flex:0 0 auto;cursor:pointer"/>`).join('')}</div></div>` : '';
     const reviews = isTool ? '' : buildReviewsHtml(item);
     const adminReviewHtml = (isTool || item.listingType === 'folder') ? '' : buildAdminReviewHtml(item.adminReview);
     body.innerHTML=`${imgHtml}<div class="m-body">
       <div class="m-cat ${isTool?'tool':''}">${isTool?'<svg class="icon i-wrench" aria-hidden="true"><use href="#i-wrench"/></svg> Digital Tool':item.category}</div>
       <div class="m-title">${esc(item.title)}</div>
-      <div class="m-desc">${esc(item.description)}</div>${galHtml}
+      <div class="m-desc">${esc(item.description)}</div>
       <div class="m-price">${P(item.price)}</div>
       <div class="m-meta-row">
         <div class="m-sold"><svg class="icon i-cart" aria-hidden="true"><use href="#i-cart"/></svg> ${item.soldCount||0} sold</div>
@@ -2132,7 +2131,7 @@ async function buyItem(id) {
       <div class="success-icon"><svg class="icon i-sparkles" aria-hidden="true"><use href="#i-sparkles"/></svg></div>
       <h3>Purchase Successful!</h3>
       <p>New balance: <strong style="color:var(--gold)">${P2(data.newBalance)}</strong></p>
-      ${isTool ? toolDeliveryHtml(data, 'buy_' + id) : detailBlock}${postPurchaseMsgHtml(data.postPurchaseMessage)}${audioManualHtml(data.audioManual)}
+      ${detailBlock}
       ${purchaseTutorialBtn(data.purchaseTutorial)}
       ${receiptRow}
       <button class="btn-primary btn-full" onclick="closeModal();showPage('purchases')" style="margin-top:12px"><svg class="icon i-package" aria-hidden="true"><use href="#i-package"/></svg> View All Purchases</button>
@@ -2215,7 +2214,7 @@ function buildPurchaseCard(p,idx) {
       <div class="pc-type ${isTool?'tool':''}">${isTool?'<svg class="icon i-wrench" aria-hidden="true"><use href="#i-wrench"/></svg> Tool':'<svg class="icon i-clipboard" aria-hidden="true"><use href="#i-clipboard"/></svg> Log'}</div>
     </div>
     <div class="purchase-id-row"><span class="pid-tag"><svg class="icon i-receipt" aria-hidden="true"><use href="#i-receipt"/></svg> ID: ${esc(purchaseId)}</span></div>
-    ${isTool ? toolDeliveryHtml(p, 'pc_' + idx) : detailContent}${postPurchaseMsgHtml(p.postPurchaseMessage)}${audioManualHtml(p.audioManual)}
+    ${detailContent}
     ${purchaseTutorialBtn(p.purchaseTutorial)}
     <div class="pc-actions">
       ${copyHistoryBtn}
@@ -2822,28 +2821,6 @@ function buildTutorialButtonHtml(tutorial, compact) {
   return compact
     ? `<button class="tutorial-btn tutorial-btn-compact" onclick="openTutorialViewer(${regId})" title="View login tutorial"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Tutorial</button>`
     : `<button class="tutorial-btn" onclick="openTutorialViewer(${regId})"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> View Login Tutorial</button>`;
-}
-// Delivery block for a tool/product purchase (after buying and in My Purchases).
-// Tutorial-only items show nothing here; their tutorial and message are shown separately.
-function toolDeliveryHtml(d, uid) {
-  const dt = d.deliveryType;
-  if (d.productMode === 'tutorial_only' || !dt || dt === 'none') return '';
-  const url = esc(d.deliverableFile || '#'), fname = esc(d.deliverableFileName || '');
-  if (dt === 'email') return `<div class="detail-box"><div class="detail-box-lbl"><svg class="icon i-lock" aria-hidden="true"><use href="#i-lock"/></svg> Sent to your email</div><pre id="${uid}_mail">${esc(d.logDetails || '')}</pre><button class="copy-details-btn" onclick="copyText('${uid}_mail',this)"><svg class="icon i-clipboard" aria-hidden="true"><use href="#i-clipboard"/></svg> Copy</button></div>`;
-  if (dt === 'video') return `<div class="tool-reveal-box"><div class="trb-label"><svg class="icon i-video" aria-hidden="true"><use href="#i-video"/></svg> Your Video</div><video controls playsinline src="${url}" style="width:100%;border-radius:8px"></video><a href="${url}" download="${fname}" class="trb-open"><svg class="icon i-arrow-down" aria-hidden="true"><use href="#i-arrow-down"/></svg> Download video</a></div>`;
-  if (dt === 'image') return `<div class="tool-reveal-box"><div class="trb-label"><svg class="icon i-image" aria-hidden="true"><use href="#i-image"/></svg> Your Picture</div><img src="${url}" alt="" style="width:100%;border-radius:8px"/><a href="${url}" download="${fname}" class="trb-open"><svg class="icon i-arrow-down" aria-hidden="true"><use href="#i-arrow-down"/></svg> Download picture</a></div>`;
-  if (dt === 'file') return `<div class="tool-reveal-box"><div class="trb-label"><svg class="icon i-folder" aria-hidden="true"><use href="#i-folder"/></svg> Your File</div><a href="${url}" download="${fname}" class="trb-open"><svg class="icon i-arrow-down" aria-hidden="true"><use href="#i-arrow-down"/></svg> Download ${fname || 'File'}</a></div>`;
-  return `<div class="tool-reveal-box"><div class="trb-label"><svg class="icon i-wrench" aria-hidden="true"><use href="#i-wrench"/></svg> Your Tool Link</div><div class="trb-link-wrap"><input class="trb-input" type="text" value="${esc(d.toolLink || '')}" readonly id="${uid}_tool"/><button class="trb-copy" onclick="copyText('${uid}_tool',this)"><svg class="icon i-clipboard" aria-hidden="true"><use href="#i-clipboard"/></svg> Copy</button></div><a href="${esc(d.toolLink || '#')}" target="_blank" class="trb-open"><svg class="icon i-rocket" aria-hidden="true"><use href="#i-rocket"/></svg> Open Tool</a></div>`;
-}
-// The audio manual, delivered only to buyers after purchase.
-function audioManualHtml(url) {
-  if (!url) return '';
-  return `<div class="detail-box"><div class="detail-box-lbl"><svg class="icon i-headphones" aria-hidden="true"><use href="#i-headphones"/></svg> Audio manual</div><audio controls preload="none" src="${esc(url)}" style="width:100%"></audio><a href="${esc(url)}" download class="trb-open" style="margin-top:8px"><svg class="icon i-arrow-down" aria-hidden="true"><use href="#i-arrow-down"/></svg> Download audio</a></div>`;
-}
-// The admin's message shown right after purchase (and kept in My Purchases).
-function postPurchaseMsgHtml(msg) {
-  if (!msg || !String(msg).trim()) return '';
-  return `<div class="detail-box"><div class="detail-box-lbl"><svg class="icon i-book-open" aria-hidden="true"><use href="#i-book-open"/></svg> Instructions</div><div style="white-space:pre-wrap;font-size:14px;line-height:1.5">${esc(msg)}</div></div>`;
 }
 // Button for a tutorial that came with a purchase (only ever present in the buyer's own purchase record).
 function purchaseTutorialBtn(t) {
