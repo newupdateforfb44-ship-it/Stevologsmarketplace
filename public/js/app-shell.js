@@ -91,7 +91,7 @@
       '<div class="slm-submenu" id="slmBoostSub"><a class="slm-sub-link" href="/boost1">Boost 1</a><a class="slm-sub-link" href="/boost2">Boost 2</a></div>' +
       '<div class="slm-drawer-label">Services</div><a class="slm-drawer-link" href="/vtu">📲 <span>Airtime & Data</span></a><a class="slm-drawer-link" href="/websites">🌐 <span>Websites</span></a>' +
       '<div class="slm-drawer-label">Learn</div><a class="slm-drawer-link" href="/tutorials">📚 <span>Tutorials</span></a>' +
-      '<div class="slm-drawer-label">Account</div><a class="slm-drawer-link" href="/purchases">📦 <span>My Orders</span></a><a class="slm-drawer-link" href="/deposit">💰 <span>Wallet / Add Money</span></a>' +
+      '<div class="slm-drawer-label">Account</div><a class="slm-drawer-link" href="/purchases">📦 <span>My Orders</span></a><a class="slm-drawer-link" href="/updates">⭐ <span>Updates</span></a><a class="slm-drawer-link" href="/deposit">💰 <span>Wallet / Add Money</span></a>' +
       '<a class="slm-drawer-link" href="/transactions">📊 <span>Transactions</span></a><a class="slm-drawer-link" href="/referrals">🎁 <span>Referrals & Cashback</span></a>' +
       '<a class="slm-drawer-link" href="/settings">👤 <span>My Profile & Settings</span></a><div class="slm-drawer-label">Support</div>' +
       '<a class="slm-drawer-link" href="/support">💬 <span>Contact Support</span></a><a class="slm-drawer-link" href="/help">❓ <span>Help Center</span></a><a class="slm-drawer-link" href="/about">ℹ️ <span>About</span></a>' +
